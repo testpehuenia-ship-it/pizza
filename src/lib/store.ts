@@ -16,10 +16,14 @@ export interface ItemCarritoBebida {
 }
 
 export interface Cliente {
+  id?: string;
   nombre: string;
   apellido: string;
+  usuario: string;
   telefono: string;
-  domicilio: string;
+  direccion: string;
+  barrio: string;
+  domicilio?: string;
 }
 
 interface EstadoTienda {
@@ -31,6 +35,7 @@ interface EstadoTienda {
   
   // Acciones
   setCliente: (cliente: Cliente) => void;
+  cerrarSesion: () => void;
   setTipoEntrega: (tipo: "delivery" | "retiro") => void;
   setDomicilioEntrega: (domicilio: string) => void;
   agregarPizza: (pizza: PizzaDataType, tamaño: "4" | "8", aderezos: string[]) => void;
@@ -50,7 +55,11 @@ export const useTiendaStore = create<EstadoTienda>()(
       tipoEntrega: "delivery",
       domicilioEntrega: "",
 
-      setCliente: (cliente) => set({ cliente, domicilioEntrega: cliente.domicilio }),
+      setCliente: (cliente) => {
+        const dir = cliente.direccion + (cliente.barrio ? ` (${cliente.barrio})` : "");
+        set({ cliente: { ...cliente, domicilio: dir }, domicilioEntrega: dir });
+      },
+      cerrarSesion: () => set({ cliente: null, domicilioEntrega: "" }),
       setTipoEntrega: (tipoEntrega) => set({ tipoEntrega }),
       setDomicilioEntrega: (domicilioEntrega) => set({ domicilioEntrega }),
 

@@ -632,4 +632,6 @@ export const BEBIDAS_DATA: BebidaDataType[] = [
   },
 ];
 
-export const WHATSAPP_NUMERO = "2964625057";
+export const WHATSAPP_NUMERO = "5492942661000";
+export const WHATSAPP_NUMERO_LOCAL = "02942661000";
+export const WHATSAPP_DISPLAY = "02942-661000";

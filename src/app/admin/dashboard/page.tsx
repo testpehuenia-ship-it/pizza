@@ -9,6 +9,7 @@ import { IngredientesAdmin } from "@/components/admin/IngredientesAdmin";
 import { CombosAdmin } from "@/components/admin/CombosAdmin";
 import { CategoriasNuevasAdmin } from "@/components/admin/CategoriasNuevasAdmin";
 import { OptimizadorImagenesAdmin } from "@/components/admin/OptimizadorImagenesAdmin";
+import { PushAdmin } from "@/components/admin/PushAdmin";
 
 interface ClienteItem {
   id: string;
@@ -23,7 +24,7 @@ interface ClienteItem {
 
 export default function AdminDashboardPage() {
   const [tab, setTab] = useState<
-    "pizzas" | "bebidas" | "ingredientes" | "combos" | "categorias" | "optimizador" | "clientes"
+    "pizzas" | "bebidas" | "ingredientes" | "combos" | "categorias" | "optimizador" | "push" | "clientes"
   >("pizzas");
 
   const [catalog, setCatalog] = useState<CatalogData | null>(null);
@@ -208,6 +209,19 @@ export default function AdminDashboardPage() {
 
             <button
               type="button"
+              onClick={() => setTab("push")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                tab === "push"
+                  ? "bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20"
+                  : "bg-white/5 text-slate-300 hover:bg-white/10"
+              }`}
+            >
+              <span>🔔</span>
+              <span>Mensajes Push</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => {
                 setTab("clientes");
                 cargarClientes();
@@ -302,7 +316,12 @@ export default function AdminDashboardPage() {
               />
             )}
 
-            {/* PESTAÑA 7: CLIENTES REGISTRADOS EN TURSO */}
+            {/* PESTAÑA 7: ADMINISTRACIÓN DE MENSAJES PUSH */}
+            {tab === "push" && (
+              <PushAdmin onMostrarNotificacion={mostrarNotificacion} />
+            )}
+
+            {/* PESTAÑA 8: CLIENTES REGISTRADOS EN TURSO */}
             {tab === "clientes" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

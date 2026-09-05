@@ -52,10 +52,18 @@ export default function HomePage() {
       setCliente(data.cliente);
       setModo("inicio");
 
-      // Disparar invitación a descargar la App únicamente después de registrarse
+      // Disparar invitación a descargar la App únicamente si AÚN NO la ha descargado ni instalado
       setTimeout(() => {
         if (typeof window !== "undefined") {
-          window.dispatchEvent(new CustomEvent("pwa:trigger-install-prompt"));
+          const yaInstaladaODescargada =
+            window.matchMedia("(display-mode: standalone)").matches ||
+            (window.navigator as any).standalone === true ||
+            localStorage.getItem("pwa_installed") === "true" ||
+            localStorage.getItem("pwa_downloaded") === "true";
+
+          if (!yaInstaladaODescargada) {
+            window.dispatchEvent(new CustomEvent("pwa:trigger-install-prompt"));
+          }
         }
       }, 700);
     } catch (err: any) {

@@ -24,10 +24,12 @@ export default function PwaPrompts() {
       });
     }
 
-    // Comprobar si ya está instalada / modo standalone
+    // Comprobar si ya está instalada o fue descargada previamente
     const standaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as any).standalone === true ||
+      localStorage.getItem("pwa_installed") === "true" ||
+      localStorage.getItem("pwa_downloaded") === "true";
 
     setIsStandalone(standaloneMode);
 
@@ -36,7 +38,11 @@ export default function PwaPrompts() {
       /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIosDevice);
 
-    // Estado actual de notificaciones
+    // Estado actual de notificaciones: comprobar si ya fueron aceptadas
+    const yaTieneNotificaciones =
+      ("Notification" in window && Notification.permission === "granted") ||
+      localStorage.getItem("pwa_notif_accepted") === "true";
+
     if ("Notification" in window) {
       setNotifPermission(Notification.permission);
     }
@@ -44,6 +50,8 @@ export default function PwaPrompts() {
     // Escuchar evento de instalación PWA en navegadores compatibles (Chrome, Edge, Android)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      // Si ya la tiene instalada o descargada, no almacenar ni mostrar prompt
+      if (standaloneMode) return;
       setDeferredPrompt(e);
     };
 
@@ -54,38 +62,52 @@ export default function PwaPrompts() {
       setDeferredPrompt(null);
       setIsStandalone(true);
       localStorage.setItem("pwa_installed", "true");
-      // Al instalar, pasar directamente al mensaje de agradecer e invitar a notificaciones con Bruno
-      setStep("notifications");
+      localStorage.setItem("pwa_downloaded", "true");
+      setShowFloatingButton(false);
+
+      // Solo si AÚN NO aceptó notificaciones, invitar amablemente
+      if (!yaTieneNotificaciones && "Notification" in window && Notification.permission === "default") {
+        setStep("notifications");
+      } else {
+        setStep("none");
+      }
     };
 
     window.addEventListener("appinstalled", handleAppInstalled);
 
     // Escuchar trigger explícito tras el registro de usuario
     const handleExplicitTrigger = () => {
-      if (!standaloneMode) {
+      // PRECAUCIÓN ESTRICTA: Si ya bajó la app o está instalada, NO mostrar mensaje de descarga
+      if (standaloneMode) return;
+
+      const installDismissed = localStorage.getItem("pwa_install_dismissed_at");
+      if (!installDismissed) {
         setStep("install");
       }
     };
 
     window.addEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
 
-    // IMPORTANTE: Si NO hay cliente registrado, mantener la portada limpia y visible
+    // Si el cliente está registrado, evaluar con precaución
     if (cliente) {
       const installDismissed = localStorage.getItem("pwa_install_dismissed_at");
       const notifDismissed = localStorage.getItem("pwa_notif_dismissed_at");
 
       const timer = setTimeout(() => {
         if (standaloneMode) {
-          // Si ya está instalada, sugerir notificaciones si aún no están configuradas
-          if ("Notification" in window && Notification.permission === "default" && !notifDismissed) {
+          // Si ya la bajó o está instalada: NUNCA mostrar mensaje de descarga
+          setShowFloatingButton(false);
+
+          // Solo preguntar notificaciones si aún NO las aceptó
+          if (!yaTieneNotificaciones && "Notification" in window && Notification.permission === "default" && !notifDismissed) {
             setStep("notifications");
+          } else {
+            setStep("none");
           }
         } else {
-          // Si el cliente está registrado pero aún no tiene la app instalada
+          // Si NO está instalada y NO fue descargada
           if (!installDismissed) {
             setStep("install");
-          } else {
-            setShowFloatingButton(true);
           }
         }
       }, 1500);
@@ -112,30 +134,41 @@ export default function PwaPrompts() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
         setDeferredPrompt(null);
+        setIsStandalone(true);
         localStorage.setItem("pwa_installed", "true");
-        setStep("notifications");
+        localStorage.setItem("pwa_downloaded", "true");
+        setShowFloatingButton(false);
+
+        // Solo si NO aceptó notificaciones previamente
+        const yaTieneNotif =
+          ("Notification" in window && Notification.permission === "granted") ||
+          localStorage.getItem("pwa_notif_accepted") === "true";
+
+        if (!yaTieneNotif && "Notification" in window && Notification.permission === "default") {
+          setStep("notifications");
+        } else {
+          setStep("none");
+        }
       } else {
         setStep("none");
-        setShowFloatingButton(true);
       }
     } else if (isIOS) {
       // Mostrar tutorial interactivo para iPhone / iPad
       setStep("ios_guide");
     } else {
-      // Instrucción amigable de instalación
+      localStorage.setItem("pwa_installed", "true");
+      localStorage.setItem("pwa_downloaded", "true");
       alert(
         "Para instalar 0600Boston en tu celular, haz clic en el menú del navegador (tres puntos ⋮ o compartir) y selecciona 'Instalar aplicación' o 'Agregar a pantalla de inicio'."
       );
       setStep("none");
-      setShowFloatingButton(true);
     }
   };
 
-  // Descartar instalación temporalmente
+  // Descartar instalación
   const handleDismissInstall = () => {
     localStorage.setItem("pwa_install_dismissed_at", Date.now().toString());
     setStep("none");
-    if (cliente) setShowFloatingButton(true);
   };
 
   // Manejar solicitud de notificaciones
@@ -151,16 +184,33 @@ export default function PwaPrompts() {
       setNotifPermission(permission);
 
       if (permission === "granted") {
+        localStorage.setItem("pwa_notif_accepted", "true");
+        localStorage.removeItem("pwa_notif_dismissed_at");
         setStep("notif_success");
+
         // Notificación de bienvenida
         new Notification("¡Bienvenido a 0600Boston! 🍕☘️", {
           body: "¡Genial! Vas a ser el primero en recibir nuestras ofertas relámpago y promociones exclusivas.",
           icon: "/images/brunoagradece.webp",
         });
 
+        // Registrar suscripción de Service Worker si está activo
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.ready.then((reg) => {
+            fetch("/api/push/subscribe", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                endpoint: `sw_${Date.now()}`,
+                userAgent: navigator.userAgent,
+              }),
+            }).catch(() => {});
+          });
+        }
+
         setTimeout(() => {
           setStep("none");
-        }, 3000);
+        }, 2500);
       } else {
         localStorage.setItem("pwa_notif_dismissed_at", Date.now().toString());
         setStep("none");

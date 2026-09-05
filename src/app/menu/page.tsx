@@ -75,8 +75,46 @@ export default function MenuPage() {
     bebidas.reduce((acc, b) => acc + b.cantidad, 0) +
     (combos || []).reduce((acc, c) => acc + c.cantidad, 0);
 
+  const [notifStatusMsg, setNotifStatusMsg] = useState<string>("");
+
+  const handlePushClick = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      alert("Tu navegador no soporta notificaciones push.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      setNotifStatusMsg("✅ Notificaciones activas: ¡Estás al día con las ofertas de 0600Boston!");
+      setTimeout(() => setNotifStatusMsg(""), 3500);
+    } else if (Notification.permission === "default") {
+      try {
+        const p = await Notification.requestPermission();
+        if (p === "granted") {
+          localStorage.setItem("pwa_notif_accepted", "true");
+          setNotifStatusMsg("🎉 ¡Notificaciones activadas con éxito!");
+          setTimeout(() => setNotifStatusMsg(""), 3500);
+          new Notification("0600Boston 🍕☘️", {
+            body: "¡Notificaciones activadas! Te avisaremos de nuestras mejores ofertas.",
+            icon: "/images/brunoagradece.webp",
+          });
+        }
+      } catch {}
+    } else {
+      setNotifStatusMsg("⚠️ Notificaciones pausadas en tu navegador.");
+      setTimeout(() => setNotifStatusMsg(""), 3500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#14532d] pb-28 select-none">
+      {/* Toast flotante de estado de notificaciones */}
+      {notifStatusMsg && (
+        <div className="fixed top-14 inset-x-4 z-50 max-w-sm mx-auto animate-bounce">
+          <div className="bg-[#14532d] text-white text-xs font-bold py-2.5 px-4 rounded-2xl shadow-xl border border-emerald-400/50 text-center">
+            {notifStatusMsg}
+          </div>
+        </div>
+      )}
+
       {/* Barra Superior Mobile */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 px-4 py-3 shadow-sm">
         <div className="max-w-md mx-auto flex items-center justify-between">
@@ -87,7 +125,17 @@ export default function MenuPage() {
             </span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Notificaciones Push */}
+            <button
+              type="button"
+              onClick={handlePushClick}
+              title="Notificaciones Push de Promociones"
+              className="text-xs font-bold text-[#15803d] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 p-2 rounded-xl transition-all"
+            >
+              🔔
+            </button>
+
             {/* Acceso a Bebidas */}
             <Link
               href="/bebidas"

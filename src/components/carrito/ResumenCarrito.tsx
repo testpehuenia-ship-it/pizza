@@ -139,13 +139,12 @@ export function ResumenCarrito() {
               + Más Pizzas
             </Link>
 
-            <button
-              type="button"
-              onClick={() => setMostrarModal(true)}
-              className="py-3 px-2 rounded-2xl text-center font-black text-xs text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-md shadow-emerald-700/20 hover:brightness-105 active:scale-[0.98] transition-all"
+            <Link
+              href="/pedido"
+              className="py-3 px-2 rounded-2xl text-center font-black text-xs text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-md shadow-emerald-700/20 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer"
             >
               Finalizar Pedido →
-            </button>
+            </Link>
           </div>
         </div>
       </div>

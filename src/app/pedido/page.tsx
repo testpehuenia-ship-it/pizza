@@ -118,15 +118,55 @@ export default function PedidoPage() {
     modoDireccion === "gps" && gpsData ? { ...gpsData, nota: notaEntrega } : null
   );
 
+  if (pizzas.length === 0 && bebidas.length === 0 && !confirmado) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
+        <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-8 text-center shadow-sm fade-in-up">
+          <span className="text-4xl block mb-2">🛒</span>
+          <h3 className="text-base font-bold text-[#14532d] mb-1">Tu carrito está vacío</h3>
+          <p className="text-xs text-[#4b6b55] mb-4">Sumá tus pizzas favoritas en el menú para confirmar tu pedido.</p>
+          <Link
+            href="/menu"
+            className="inline-block py-2.5 px-5 rounded-full bg-[#15803d] text-white text-xs font-bold shadow-md shadow-emerald-700/20"
+          >
+            Ir a la Carta 🍕
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
       <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-6 sm:p-8 shadow-[0_15px_40px_rgba(20,83,45,0.08)] fade-in-up">
         {!confirmado ? (
           <div>
-            <div className="text-center mb-6">
+            <div className="text-center mb-5">
               <span className="text-4xl inline-block mb-1">🛵</span>
               <h2 className="text-2xl font-black text-[#14532d]">Confirmar Pedido</h2>
-              <p className="text-xs text-[#4b6b55] mt-1">Elegí la modalidad de entrega</p>
+              <p className="text-xs text-[#4b6b55] mt-1">Elegí la modalidad y dirección de entrega</p>
+            </div>
+
+            {/* Resumen breve de productos */}
+            <div className="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-100/80 text-xs mb-4">
+              <div className="flex justify-between items-center mb-1 text-[#4b6b55] font-bold text-[11px] uppercase">
+                <span>Tu Selección:</span>
+                <span>{pizzas.length + bebidas.reduce((a, b) => a + b.cantidad, 0)} items</span>
+              </div>
+              <div className="space-y-1 text-[#14532d] font-semibold">
+                {pizzas.map((p, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span>🍕 {p.pizza.nombre} ({p.tamaño}p)</span>
+                    <span className="font-mono font-bold">${p.precio.toLocaleString("es-AR")}</span>
+                  </div>
+                ))}
+                {bebidas.map((b, i) => (
+                  <div key={i} className="flex justify-between text-[#4b6b55]">
+                    <span>🥤 {b.cantidad}x {b.bebida.nombre}</span>
+                    <span className="font-mono">${(b.precioUnitario * b.cantidad).toLocaleString("es-AR")}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-4">

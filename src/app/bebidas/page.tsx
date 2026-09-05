@@ -41,17 +41,7 @@ export default function BebidasPage() {
       alert("Tu carrito está vacío. Sumá una pizza o bebida antes de finalizar.");
       return;
     }
-    const url = generarMensajeWhatsApp(
-      cliente,
-      pizzas,
-      bebidas,
-      tipoEntrega,
-      domicilioEntrega || cliente?.domicilio || "",
-      total
-    );
-    window.open(url, "_blank");
-    vaciarCarrito();
-    router.push("/");
+    router.push("/pedido");
   };
 
   const handleEncargarOtraPizza = () => {
@@ -205,13 +195,13 @@ export default function BebidasPage() {
               <span>🍕 Pedir otra Pizza</span>
             </button>
 
-            {/* Botón 2: Finalizar pedido por WhatsApp */}
+            {/* Botón 2: Confirmar Entrega y Pedido */}
             <button
               type="button"
               onClick={handleFinalizarWhatsApp}
-              className="py-3 px-3 rounded-2xl font-black text-xs text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+              className="py-3 px-3 rounded-2xl font-black text-xs text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span>💬 Enviar a WhatsApp</span>
+              <span>🛵 Elegir Entrega y Pedir</span>
             </button>
           </div>
         </div>

@@ -38,18 +38,9 @@ export function AnimacionCaja({ pizzaNombre, onCerrar }: AnimacionCajaProps) {
     router.push("/bebidas");
   };
 
-  const handleFinalizarWhatsApp = () => {
-    const url = generarMensajeWhatsApp(
-      cliente,
-      pizzas,
-      bebidas,
-      tipoEntrega,
-      domicilioEntrega || cliente?.domicilio || "",
-      total
-    );
-    window.open(url, "_blank");
-    vaciarCarrito();
+  const handleIrAPedido = () => {
     onCerrar();
+    router.push("/pedido");
   };
 
   const handleSeguirPidiendo = () => {
@@ -110,13 +101,13 @@ export function AnimacionCaja({ pizzaNombre, onCerrar }: AnimacionCajaProps) {
                 <span>🥤 Ver Carta de Bebidas</span>
               </button>
 
-              {/* Opción 2: Finalizar Pedido Directo a WhatsApp */}
+              {/* Opción 2: Confirmar Dirección (Registrada vs Celular GPS) y Pedido */}
               <button
                 type="button"
-                onClick={handleFinalizarWhatsApp}
-                className="w-full py-3 px-4 rounded-2xl font-bold text-xs text-[#14532d] bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                onClick={handleIrAPedido}
+                className="w-full py-3.5 px-4 rounded-2xl font-black text-xs text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-md shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>💬 Finalizar Pedido por WhatsApp (${total.toLocaleString("es-AR")})</span>
+                <span>🛵 Elegir Entrega y Pedir (${total.toLocaleString("es-AR")})</span>
               </button>
 
               {/* Opción 3: Seguir en el Menú */}

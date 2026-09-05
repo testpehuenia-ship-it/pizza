@@ -130,71 +130,56 @@ export function PizzaInteractiva({
 
   return (
     <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto flex items-center justify-center select-none">
-      {/* Fuente redonda de madera rústica gourmet */}
-      <div 
-        className="absolute inset-0 rounded-full shadow-[0_20px_50px_rgba(20,83,45,0.15)] flex items-center justify-center border-4 border-[#8B5A2B]/40"
-        style={{
-          background: "radial-gradient(circle at 40% 40%, #c9935a 0%, #a66e38 50%, #6d421d 100%)",
-        }}
-      >
-        {/* Borde tallado de la fuente */}
-        <div className="w-[94%] h-[94%] rounded-full border-2 border-[#543012]/30 flex items-center justify-center relative overflow-hidden">
-          
-          {/* Prepizza Base Fotográfica Hiperrealista (Masa horneada, salsa y muzzarella sobre tabla) */}
-          <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center">
-            <img
-              src="/images/pizzas/pizza_base_madera.png"
-              alt="Base de Pizza 0600 Boston artesanal"
-              className="w-full h-full object-cover rounded-full filter drop-shadow-md"
-            />
-          </div>
+      {/* Disco redondo de la pizza horneada sobre tabla artesanal de madera (sin biselados artificiales) */}
+      <div className="relative w-full h-full rounded-full overflow-hidden filter drop-shadow-[0_18px_32px_rgba(0,0,0,0.28)] flex items-center justify-center">
+        {/* Fotografía de la Pizza sobre tabla de madera */}
+        <img
+          src="/images/pizzas/pizza_base_madera.png"
+          alt="Pizza 0600 Boston artesanal"
+          className="w-full h-full object-cover rounded-full pointer-events-none"
+        />
 
-          {/* Marcadores de Porciones (Líneas sutiles si es 4 u 8) */}
-          <div className="absolute inset-0 pointer-events-none opacity-25">
-            <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-[#451a03] shadow-sm"></div>
-            <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#451a03] shadow-sm"></div>
-            {tamaño === "8" && (
-              <>
-                <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[#451a03] rotate-45 shadow-sm"></div>
-                <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[#451a03] -rotate-45 shadow-sm"></div>
-              </>
-            )}
-          </div>
+        {/* Marcadores de Porciones sutiles */}
+        <div className="absolute inset-0 pointer-events-none opacity-20">
+          <div className="absolute top-1/2 left-0 right-0 h-[1.5px] bg-[#451a03]"></div>
+          <div className="absolute left-1/2 top-0 bottom-0 w-[1.5px] bg-[#451a03]"></div>
+          {tamaño === "8" && (
+            <>
+              <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[#451a03] rotate-45"></div>
+              <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-[#451a03] -rotate-45"></div>
+            </>
+          )}
+        </div>
 
-          {/* Capa de Ingredientes con distribución inteligente anti-occlusión (mínimo 50% siempre visible) */}
-          <div className="absolute inset-0 pointer-events-none">
-            {toppingsRenderizables.map((item) => (
-              <div
-                key={item.key}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-ingredient-drop select-none transition-all duration-300 ease-out"
-                style={{
-                  left: `${item.x.toFixed(2)}%`,
-                  top: `${item.y.toFixed(2)}%`,
-                  transform: `translate(-50%, -50%) rotate(${item.rot}deg) scale(${item.scale})`,
-                  zIndex: item.zIndex,
-                }}
-              >
-                {item.imagenUrl ? (
-                  <img
-                    src={item.imagenUrl}
-                    alt={item.nombre}
-                    className={`object-contain pointer-events-none filter drop-shadow-[0_5px_7px_rgba(0,0,0,0.55)] ${item.claseTamano}`}
-                  />
-                ) : (
-                  <span className="text-2xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]">
-                    {item.icono}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Trébol de 4 Hojas Verde de la marca 0600Boston */}
-          <div className="absolute top-2 right-2 bg-emerald-900/30 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-white border border-emerald-400/30 pointer-events-none shadow-md">
-            🍀 0600
-          </div>
+        {/* Capa de Ingredientes con distribución inteligente anti-occlusión (mínimo 50% siempre visible) */}
+        <div className="absolute inset-0 pointer-events-none">
+          {toppingsRenderizables.map((item) => (
+            <div
+              key={item.key}
+              className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-ingredient-drop select-none transition-all duration-300 ease-out"
+              style={{
+                left: `${item.x.toFixed(2)}%`,
+                top: `${item.y.toFixed(2)}%`,
+                transform: `translate(-50%, -50%) rotate(${item.rot}deg) scale(${item.scale})`,
+                zIndex: item.zIndex,
+              }}
+            >
+              {item.imagenUrl ? (
+                <img
+                  src={item.imagenUrl}
+                  alt={item.nombre}
+                  className={`object-contain pointer-events-none filter drop-shadow-[0_5px_7px_rgba(0,0,0,0.55)] ${item.claseTamano}`}
+                />
+              ) : (
+                <span className="text-2xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]">
+                  {item.icono}
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 }
+

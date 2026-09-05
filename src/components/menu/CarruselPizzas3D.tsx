@@ -95,7 +95,7 @@ export function CarruselPizzas3D({
     timerTransicion.current = setTimeout(() => {
       setActiveIndex(nuevoIdx);
       setTransicion(null);
-    }, 380);
+    }, 420);
   };
 
   // Clicks en PC / Táctil:
@@ -315,33 +315,25 @@ export function CarruselPizzas3D({
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
       >
-        {/* ZONA DE CLICK IZQUIERDA (PC y Móvil): Sale a la izquierda e ingresa del lado derecho la siguiente */}
+        {/* ZONA DE CLICK IZQUIERDA (Invisible, sin flechas a la vista): Sale a la izquierda e ingresa del lado derecho la siguiente */}
         <div
           onClick={handleLeftClick}
-          className="absolute left-0 top-0 bottom-0 w-1/2 z-20 cursor-pointer flex items-center justify-start pl-2 sm:pl-3 group"
-          title="Click lado izquierdo: Sale a la izquierda e ingresa por la derecha"
+          className="absolute left-0 top-0 bottom-0 w-1/2 z-20 cursor-pointer"
+          title="Click lado izquierdo: girar hacia la izquierda"
           role="button"
-          aria-label="Click lado izquierdo: pizza sale a la izquierda e ingresa por la derecha la siguiente"
-        >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/90 group-hover:bg-[#15803d] text-[#15803d] group-hover:text-white shadow-lg border border-emerald-200/80 flex items-center justify-center font-black text-xl sm:text-2xl transition-all duration-200 group-hover:scale-110 group-active:scale-95 backdrop-blur-md">
-            ‹
-          </div>
-        </div>
+          aria-label="Click lado izquierdo: pizza gira hacia la izquierda e ingresa la siguiente"
+        />
 
-        {/* ZONA DE CLICK DERECHA (PC y Móvil): Sale a la derecha e ingresa del lado izquierdo la anterior */}
+        {/* ZONA DE CLICK DERECHA (Invisible, sin flechas a la vista): Sale a la derecha e ingresa del lado izquierdo la anterior */}
         <div
           onClick={handleRightClick}
-          className="absolute right-0 top-0 bottom-0 w-1/2 z-20 cursor-pointer flex items-center justify-end pr-2 sm:pr-3 group"
-          title="Click lado derecho: Sale a la derecha e ingresa por la izquierda"
+          className="absolute right-0 top-0 bottom-0 w-1/2 z-20 cursor-pointer"
+          title="Click lado derecho: girar hacia la derecha"
           role="button"
-          aria-label="Click lado derecho: pizza sale a la derecha e ingresa por la izquierda la anterior"
-        >
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/90 group-hover:bg-[#15803d] text-[#15803d] group-hover:text-white shadow-lg border border-emerald-200/80 flex items-center justify-center font-black text-xl sm:text-2xl transition-all duration-200 group-hover:scale-110 group-active:scale-95 backdrop-blur-md">
-            ›
-          </div>
-        </div>
+          aria-label="Click lado derecho: pizza gira hacia la derecha e ingresa la anterior"
+        />
 
-        {/* CONTENEDOR DE LA PIZZA CON ANIMACIÓN DE ENTRADA Y SALIDA */}
+        {/* CONTENEDOR DE LA PIZZA CON ANIMACIÓN DE RUEDA DE PIZZA (ROLLING WHEEL) */}
         <div className="relative w-full flex items-center justify-center min-h-[290px] sm:min-h-[330px]">
           {transicion === null ? (
             // ESTADO NORMAL ESTABLE
@@ -353,14 +345,14 @@ export function CarruselPizzas3D({
               />
             </div>
           ) : (
-            // ESTADO DE TRANSICIÓN: Pizza actual sale y nueva pizza ingresa
+            // ESTADO DE TRANSICIÓN: Rueda de pizza saliendo y nueva pizza rodando en entrada
             <>
-              {/* Pizza que SALE */}
+              {/* Pizza que SALE rodando */}
               <div
                 className={`w-full flex items-center justify-center pointer-events-none ${
                   transicion.direccion === "exit-left-enter-right"
-                    ? "animate-pizza-exit-left"
-                    : "animate-pizza-exit-right"
+                    ? "animate-pizza-wheel-exit-left"
+                    : "animate-pizza-wheel-exit-right"
                 }`}
               >
                 <PizzaInteractiva
@@ -375,12 +367,12 @@ export function CarruselPizzas3D({
                 />
               </div>
 
-              {/* Pizza que ENTRA */}
+              {/* Pizza que ENTRA rodando */}
               <div
                 className={`absolute inset-0 w-full flex items-center justify-center pointer-events-none ${
                   transicion.direccion === "exit-left-enter-right"
-                    ? "animate-pizza-enter-right"
-                    : "animate-pizza-enter-left"
+                    ? "animate-pizza-wheel-enter-right"
+                    : "animate-pizza-wheel-enter-left"
                 }`}
               >
                 <PizzaInteractiva
@@ -398,15 +390,13 @@ export function CarruselPizzas3D({
           )}
         </div>
 
-        {/* Guía Visual Interactiva */}
+        {/* Guía Visual Interactiva sin flechas */}
         <div className="flex flex-col items-center justify-center gap-1 mt-2 text-center">
-          <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#14532d] bg-emerald-50/90 py-1 px-3 rounded-full border border-emerald-200/60 shadow-xs">
-            <span>👈 Click / Deslizá izquierda</span>
-            <span className="text-emerald-400 font-bold">•</span>
-            <span>Click / Deslizá derecha 👉</span>
+          <div className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#14532d] bg-emerald-50/90 py-1 px-4 rounded-full border border-emerald-200/60 shadow-xs">
+            <span>🍕 Deslizá con el dedo o hacé click para girar la pizza</span>
           </div>
           <span className="text-[10px] text-[#4b6b55]">
-            En PC hacé click a los costados o seleccioná arriba con el mouse
+            En PC hacé click a los costados de la pizza o seleccioná arriba con el mouse
           </span>
         </div>
       </div>

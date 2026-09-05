@@ -110,63 +110,79 @@ body {
   animation: pulseSubtle 2s infinite ease-in-out;
 }
 
-/* Transiciones de salida y entrada del carrusel de pizzas 0600Boston */
-@keyframes pizzaExitLeft {
+/* Transiciones de salida y entrada: Efecto Rueda de Pizza 0600Boston (Rolling Wheel) */
+@keyframes pizzaWheelExitLeft {
   0% {
     opacity: 1;
-    transform: translateX(0) scale(1) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
+  }
+  75% {
+    opacity: 0.9;
   }
   100% {
     opacity: 0;
-    transform: translateX(-125%) scale(0.8) rotate(-15deg);
+    transform: translateX(-140%) rotate(-200deg) scale(0.88);
   }
 }
 
-@keyframes pizzaEnterRight {
+@keyframes pizzaWheelEnterRight {
   0% {
     opacity: 0;
-    transform: translateX(125%) scale(0.8) rotate(15deg);
+    transform: translateX(140%) rotate(200deg) scale(0.88);
+  }
+  25% {
+    opacity: 0.9;
   }
   100% {
     opacity: 1;
-    transform: translateX(0) scale(1) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
   }
 }
 
-@keyframes pizzaExitRight {
+@keyframes pizzaWheelExitRight {
   0% {
     opacity: 1;
-    transform: translateX(0) scale(1) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
+  }
+  75% {
+    opacity: 0.9;
   }
   100% {
     opacity: 0;
-    transform: translateX(125%) scale(0.8) rotate(15deg);
+    transform: translateX(140%) rotate(200deg) scale(0.88);
   }
 }
 
-@keyframes pizzaEnterLeft {
+@keyframes pizzaWheelEnterLeft {
   0% {
     opacity: 0;
-    transform: translateX(-125%) scale(0.8) rotate(-15deg);
+    transform: translateX(-140%) rotate(-200deg) scale(0.88);
+  }
+  25% {
+    opacity: 0.9;
   }
   100% {
     opacity: 1;
-    transform: translateX(0) scale(1) rotate(0deg);
+    transform: translateX(0) rotate(0deg) scale(1);
   }
 }
 
-.animate-pizza-exit-left {
-  animation: pizzaExitLeft 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+.animate-pizza-exit-left,
+.animate-pizza-wheel-exit-left {
+  animation: pizzaWheelExitLeft 0.42s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-.animate-pizza-enter-right {
-  animation: pizzaEnterRight 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+.animate-pizza-enter-right,
+.animate-pizza-wheel-enter-right {
+  animation: pizzaWheelEnterRight 0.42s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-.animate-pizza-exit-right {
-  animation: pizzaExitRight 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+.animate-pizza-exit-right,
+.animate-pizza-wheel-exit-right {
+  animation: pizzaWheelExitRight 0.42s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-.animate-pizza-enter-left {
-  animation: pizzaEnterLeft 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+.animate-pizza-enter-left,
+.animate-pizza-wheel-enter-left {
+  animation: pizzaWheelEnterLeft 0.42s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }

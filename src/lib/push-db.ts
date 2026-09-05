@@ -13,6 +13,17 @@ export interface PushNotificationRecord {
   estado: "enviada" | "programada";
 }
 
+export interface PushTemplateItem {
+  id: string;
+  nombre?: string;
+  titulo: string;
+  mensaje: string;
+  url: string;
+  icono: string;
+  destinatarios: string;
+  fechaCreacion: string;
+}
+
 export interface PushSubscriptionItem {
   id: string;
   endpoint: string;
@@ -25,6 +36,7 @@ const PUSH_DATA_FILE = path.join(process.cwd(), "src", "data", "push-notificatio
 interface PushDataStore {
   historial: PushNotificationRecord[];
   suscripciones: PushSubscriptionItem[];
+  plantillas: PushTemplateItem[];
 }
 
 const DEFAULT_PUSH_DATA: PushDataStore = {
@@ -45,12 +57,44 @@ const DEFAULT_PUSH_DATA: PushDataStore = {
       mensaje: "Aprovechá hoy tu pizza Napolitana grande 8 porciones a precio especial.",
       url: "/menu",
       icono: "🍕",
+      fecha: new Date(Date.now() - 3600000).toISOString(),
+      destinatarios: "Todos los Clientes",
+      estado: "enviada",
+    },
+    {
+      id: "push_3",
+      titulo: "🛵 Delivery Express Sin Cargo en Combos",
+      mensaje: "Pedí tu combo favorito hoy y te lo enviamos gratis a domicilio.",
+      url: "/menu",
+      icono: "🛵",
       fecha: new Date().toISOString(),
       destinatarios: "Todos los Clientes",
       estado: "enviada",
     },
   ],
   suscripciones: [],
+  plantillas: [
+    {
+      id: "tmpl_1",
+      nombre: "Promo Napolitana 20% OFF",
+      titulo: "🔥 ¡20% OFF en Napolitana Grande!",
+      mensaje: "Aprovechá hoy tu pizza Napolitana 8 porciones a precio especial.",
+      url: "/menu",
+      icono: "🍕",
+      destinatarios: "Todos los Clientes",
+      fechaCreacion: new Date().toISOString(),
+    },
+    {
+      id: "tmpl_2",
+      nombre: "Bebida Gratis con Pizza",
+      titulo: "🎁 ¡Tu Bebida va de Regalo!",
+      mensaje: "Con tu pedido de pizza grande recibís una gaseosa fría gratis.",
+      url: "/bebidas",
+      icono: "🥤",
+      destinatarios: "Todos los Clientes",
+      fechaCreacion: new Date().toISOString(),
+    },
+  ],
 };
 
 let memoryPushCache: PushDataStore | null = null;
@@ -130,8 +174,33 @@ export async function agregarNotificacionPush(
     ...notif,
   };
   store.historial.unshift(nueva);
+  // Mantener estrictamente las últimas 3 notificaciones push guardadas
+  store.historial = store.historial.slice(0, 3);
   await persistPushData(store);
   return nueva;
+}
+
+export async function agregarPlantillaPush(
+  plantilla: Omit<PushTemplateItem, "id" | "fechaCreacion">
+): Promise<PushTemplateItem> {
+  const store = await getPushData();
+  if (!store.plantillas) store.plantillas = [];
+  const nueva: PushTemplateItem = {
+    id: `tmpl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    fechaCreacion: new Date().toISOString(),
+    ...plantilla,
+  };
+  store.plantillas.unshift(nueva);
+  await persistPushData(store);
+  return nueva;
+}
+
+export async function eliminarPlantillaPush(id: string): Promise<boolean> {
+  const store = await getPushData();
+  if (!store.plantillas) return false;
+  store.plantillas = store.plantillas.filter((p) => p.id !== id);
+  await persistPushData(store);
+  return true;
 }
 
 export async function registrarSuscripcionPush(

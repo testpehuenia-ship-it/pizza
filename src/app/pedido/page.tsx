@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTiendaStore } from "@/lib/store";
 import { generarMensajeWhatsApp } from "@/lib/whatsapp";
+import { salirYCerrarApp } from "@/lib/cerrar-app";
 import Link from "next/link";
 
 export default function PedidoPage() {
@@ -156,8 +157,8 @@ export default function PedidoPage() {
             </Link>
             <button
               type="button"
-              onClick={() => router.push("/")}
-              className="w-full sm:w-auto py-2.5 px-5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-black shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+              onClick={() => salirYCerrarApp()}
+              className="w-full sm:w-auto py-2.5 px-5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-black shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>🚪</span>
               <span>Salir</span>
@@ -182,7 +183,8 @@ export default function PedidoPage() {
           </Link>
           <button
             type="button"
-            onClick={() => router.push("/")}
+            onClick={() => salirYCerrarApp()}
+            title="Salir y cerrar la aplicación"
             className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <span>🚪</span>
@@ -452,7 +454,7 @@ export default function PedidoPage() {
                 </Link>
                 <button
                   type="button"
-                  onClick={() => router.push("/")}
+                  onClick={() => salirYCerrarApp()}
                   className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
                 >
                   <span>🚪 Salir</span>

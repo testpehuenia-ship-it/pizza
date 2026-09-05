@@ -8,6 +8,7 @@ import { CarruselPizzas3D } from "@/components/menu/CarruselPizzas3D";
 import { AnimacionCaja } from "@/components/carrito/AnimacionCaja";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { salirYCerrarApp } from "@/lib/cerrar-app";
 
 export default function MenuPage() {
   const router = useRouter();
@@ -154,15 +155,16 @@ export default function MenuPage() {
               <span className="hidden sm:inline font-mono">(${total.toLocaleString("es-AR")})</span>
             </Link>
 
-            {/* Botón Salir Destacado */}
-            <Link
-              href="/"
-              title="Salir y volver al inicio"
-              className="text-xs font-black text-white bg-gradient-to-r from-red-600 to-rose-600 px-2.5 py-1.5 rounded-xl shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1"
+            {/* Botón Salir Destacado que cierra la app */}
+            <button
+              type="button"
+              onClick={() => salirYCerrarApp()}
+              title="Salir y cerrar la aplicación"
+              className="text-xs font-black text-white bg-gradient-to-r from-red-600 to-rose-600 px-2.5 py-1.5 rounded-xl shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
             >
               <span>🚪</span>
               <span className="hidden sm:inline">Salir</span>
-            </Link>
+            </button>
           </div>
         </div>
       </header>

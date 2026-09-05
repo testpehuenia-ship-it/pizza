@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { PushNotificationRecord } from "@/lib/push-db";
+import { PushNotificationRecord, PushTemplateItem } from "@/lib/push-db";
 
 interface PushAdminProps {
   onMostrarNotificacion: (msg: string, tipo?: "exito" | "error") => void;
@@ -9,10 +9,13 @@ interface PushAdminProps {
 
 export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [historial, setHistorial] = useState<PushNotificationRecord[]>([]);
+  const [plantillas, setPlantillas] = useState<PushTemplateItem[]>([]);
   const [cargando, setCargando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
   const [subiendoIcono, setSubiendoIcono] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Formulario de emisión
   const [formTitulo, setFormTitulo] = useState("🔥 ¡Promo Relámpago en 0600Boston! 🍕");
@@ -60,8 +63,9 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
     try {
       const res = await fetch("/api/push");
       const data = await res.json();
-      if (data.success && data.historial) {
-        setHistorial(data.historial);
+      if (data.success) {
+        if (data.historial) setHistorial(data.historial.slice(0, 3));
+        if (data.plantillas) setPlantillas(data.plantillas);
       }
     } catch (err) {
       console.error("Error al cargar historial push:", err);
@@ -94,12 +98,86 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
       if (!res.ok) throw new Error(data.error || "Error al enviar notificación push");
 
       onMostrarNotificacion("¡Notificación push emitida y registrada con éxito!", "exito");
-      cargarHistorial();
+      if (data.historial) setHistorial(data.historial.slice(0, 3));
+      else cargarHistorial();
     } catch (err: any) {
       onMostrarNotificacion(err.message, "error");
     } finally {
       setEnviando(false);
     }
+  };
+
+  const handleGuardarPlantilla = async () => {
+    if (!formTitulo.trim() || !formMensaje.trim()) {
+      onMostrarNotificacion("Por favor completá título y mensaje antes de guardar la plantilla", "error");
+      return;
+    }
+
+    setGuardandoPlantilla(true);
+    try {
+      const res = await fetch("/api/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "guardar_plantilla",
+          nombre: formTitulo.length > 32 ? formTitulo.slice(0, 32) + "..." : formTitulo,
+          titulo: formTitulo,
+          mensaje: formMensaje,
+          url: formUrl,
+          icono: formIcono,
+          destinatarios: formDestinatarios,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error al guardar plantilla");
+
+      if (data.plantillas) setPlantillas(data.plantillas);
+      onMostrarNotificacion("¡Plantilla guardada con éxito!", "exito");
+    } catch (err: any) {
+      onMostrarNotificacion(err.message, "error");
+    } finally {
+      setGuardandoPlantilla(false);
+    }
+  };
+
+  const handleEliminarPlantilla = async (id: string) => {
+    try {
+      const res = await fetch("/api/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "eliminar_plantilla",
+          id,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.plantillas) {
+        setPlantillas(data.plantillas);
+        onMostrarNotificacion("Plantilla eliminada con éxito", "exito");
+      }
+    } catch (err: any) {
+      onMostrarNotificacion("Error al eliminar plantilla", "error");
+    }
+  };
+
+  const handleCargarNotificacion = (push: PushNotificationRecord) => {
+    setFormTitulo(push.titulo);
+    setFormMensaje(push.mensaje);
+    setFormUrl(push.url);
+    setFormIcono(push.icono);
+    setFormDestinatarios(push.destinatarios);
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+    onMostrarNotificacion("Notificación cargada en el formulario lista para editar y enviar de nuevo", "exito");
+  };
+
+  const handleCargarPlantilla = (tmpl: PushTemplateItem) => {
+    setFormTitulo(tmpl.titulo);
+    setFormMensaje(tmpl.mensaje);
+    setFormUrl(tmpl.url);
+    setFormIcono(tmpl.icono);
+    setFormDestinatarios(tmpl.destinatarios);
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
+    onMostrarNotificacion(`Plantilla "${tmpl.nombre || tmpl.titulo}" cargada en el formulario`, "exito");
   };
 
   const handleProbarEnEsteDispositivo = async () => {
@@ -186,11 +264,54 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
       </div>
 
       {/* Formulario para Componer y Emitir Notificación Push */}
-      <div className="bg-[#151f2e] border-2 border-emerald-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-white/10">
-          <span className="text-2xl">📢</span>
-          <h3 className="text-base font-black text-white">Componer Nueva Notificación Push</h3>
+      <div ref={formRef} className="bg-[#151f2e] border-2 border-emerald-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">📢</span>
+            <h3 className="text-base font-black text-white">Componer Nueva Notificación Push</h3>
+          </div>
+          <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+            Web Push v2.0
+          </span>
         </div>
+
+        {/* Sección de Plantillas Guardadas */}
+        {plantillas && plantillas.length > 0 && (
+          <div className="bg-[#0d141e] border border-white/10 rounded-2xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <span>📑</span>
+                <span>Plantillas Guardadas ({plantillas.length}) - Clic para usar en formulario:</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {plantillas.map((tmpl) => (
+                <div
+                  key={tmpl.id}
+                  className="inline-flex items-center gap-1.5 bg-[#151f2e] hover:bg-emerald-950/50 border border-white/10 hover:border-emerald-400/60 pl-2.5 pr-1.5 py-1 rounded-xl text-xs text-white transition-all shadow-sm"
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleCargarPlantilla(tmpl)}
+                    title="Cargar esta plantilla en el formulario"
+                    className="flex items-center gap-1.5 font-bold text-left cursor-pointer"
+                  >
+                    <span>{tmpl.icono?.startsWith("/") || tmpl.icono?.startsWith("http") ? "🖼️" : tmpl.icono}</span>
+                    <span className="text-[11px] text-slate-200">{tmpl.nombre || tmpl.titulo}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEliminarPlantilla(tmpl.id)}
+                    title="Eliminar plantilla"
+                    className="text-slate-400 hover:text-red-400 text-xs px-1 hover:bg-white/10 rounded-md transition-colors cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleEnviarPush} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -357,11 +478,21 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+          <div className="flex justify-end items-center gap-2.5 pt-2 border-t border-white/10 flex-wrap">
+            <button
+              type="button"
+              onClick={handleGuardarPlantilla}
+              disabled={guardandoPlantilla}
+              className="bg-[#1e293b] hover:bg-[#334155] text-emerald-400 hover:text-white border border-emerald-500/40 font-black text-xs px-5 py-3 rounded-2xl shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span>💾</span>
+              <span>{guardandoPlantilla ? "Guardando..." : "Guardar como Plantilla"}</span>
+            </button>
+
             <button
               type="submit"
               disabled={enviando}
-              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-6 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2"
+              className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-6 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
             >
               <span>{enviando ? "Emitiendo push..." : "🚀 Enviar Notificación Push"}</span>
             </button>
@@ -369,18 +500,23 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
         </form>
       </div>
 
-      {/* Historial de Notificaciones Push Emitidas */}
+      {/* Historial de Últimas 3 Notificaciones Push Guardadas */}
       <div className="bg-[#151f2e] border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-white/10">
-          <h3 className="text-base font-black text-white flex items-center gap-2">
-            <span>📋</span>
-            <span>Historial de Mensajes Push Enviados ({historial.length})</span>
-          </h3>
+          <div>
+            <h3 className="text-base font-black text-white flex items-center gap-2">
+              <span>📋</span>
+              <span>Últimas 3 Notificaciones Push Guardadas</span>
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Se almacenan las 3 emisiones más recientes con opción de cargarlas en el formulario y reutilizarlas.
+            </p>
+          </div>
           <button
             type="button"
             onClick={cargarHistorial}
             disabled={cargando}
-            className="text-xs text-emerald-400 hover:text-emerald-300 font-bold"
+            className="text-xs text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer"
           >
             {cargando ? "Actualizando..." : "🔄 Actualizar"}
           </button>
@@ -390,9 +526,9 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
           {historial.map((push) => (
             <div
               key={push.id}
-              className="bg-[#0d141e] border border-white/5 hover:border-emerald-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md"
+              className="bg-[#0d141e] border border-white/5 hover:border-emerald-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
                 {push.icono?.startsWith("http") || push.icono?.startsWith("/") ? (
                   <div className="w-10 h-10 p-1 bg-[#151f2e] border border-white/10 rounded-xl shrink-0 flex items-center justify-center overflow-hidden">
                     <img src={push.icono} alt="Icono" className="w-full h-full object-contain" />
@@ -402,21 +538,31 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
                     {push.icono}
                   </span>
                 )}
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-extrabold text-white text-sm">{push.titulo}</h4>
+                    <h4 className="font-extrabold text-white text-sm truncate">{push.titulo}</h4>
                     <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
                       {push.estado}
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 mt-1 leading-relaxed">{push.mensaje}</p>
-                  <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-2 font-mono">
+                  <div className="flex items-center gap-3 text-[10px] text-slate-500 mt-2 font-mono flex-wrap">
                     <span>📅 {new Date(push.fecha).toLocaleString("es-AR")}</span>
                     <span>👥 {push.destinatarios}</span>
                     <span>🔗 Destino: {push.url}</span>
                   </div>
                 </div>
               </div>
+
+              {/* Botón Editar / Usar nuevamente */}
+              <button
+                type="button"
+                onClick={() => handleCargarNotificacion(push)}
+                className="w-full md:w-auto shrink-0 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 font-extrabold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm hover:brightness-110"
+              >
+                <span>✏️</span>
+                <span>Editar / Usar nuevamente</span>
+              </button>
             </div>
           ))}
 

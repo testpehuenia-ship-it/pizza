@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BackgroundVideo from "@/components/landing/BackgroundVideo";
 import { useTiendaStore } from "@/lib/store";
+import { salirYCerrarApp } from "@/lib/cerrar-app";
 
 export default function HomePage() {
   const router = useRouter();
@@ -119,7 +120,7 @@ export default function HomePage() {
 
         {cliente && modo === "inicio" && (
           <button
-            onClick={() => cerrarSesion()}
+            onClick={() => salirYCerrarApp()}
             className="text-xs font-black text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-500 px-4 py-1.5 rounded-full border border-red-300/40 shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
           >
             <span>🚪</span>

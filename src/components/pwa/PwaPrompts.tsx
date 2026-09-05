@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import { useTiendaStore } from "@/lib/store";
 
 type PromptStep = "none" | "install" | "ios_guide" | "notifications" | "notif_success";
 
 export default function PwaPrompts() {
+  const { cliente } = useTiendaStore();
   const [step, setStep] = useState<PromptStep>("none");
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
@@ -59,33 +60,50 @@ export default function PwaPrompts() {
 
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // Determinar qué mensaje mostrar al cargar
-    const installDismissed = localStorage.getItem("pwa_install_dismissed_at");
-    const notifDismissed = localStorage.getItem("pwa_notif_dismissed_at");
-
-    const timer = setTimeout(() => {
-      if (standaloneMode) {
-        // Ya está instalada: verificar si aún no tiene notificaciones activadas
-        if ("Notification" in window && Notification.permission === "default" && !notifDismissed) {
-          setStep("notifications");
-        }
-      } else {
-        // No está instalada: verificar si fue descartada recientemente
-        if (!installDismissed) {
-          setStep("install");
-        } else {
-          // Mostrar botón flotante discreto para permitir instalar en cualquier momento
-          setShowFloatingButton(true);
-        }
+    // Escuchar trigger explícito tras el registro de usuario
+    const handleExplicitTrigger = () => {
+      if (!standaloneMode) {
+        setStep("install");
       }
-    }, 1200);
+    };
+
+    window.addEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
+
+    // IMPORTANTE: Si NO hay cliente registrado, mantener la portada limpia y visible
+    if (cliente) {
+      const installDismissed = localStorage.getItem("pwa_install_dismissed_at");
+      const notifDismissed = localStorage.getItem("pwa_notif_dismissed_at");
+
+      const timer = setTimeout(() => {
+        if (standaloneMode) {
+          // Si ya está instalada, sugerir notificaciones si aún no están configuradas
+          if ("Notification" in window && Notification.permission === "default" && !notifDismissed) {
+            setStep("notifications");
+          }
+        } else {
+          // Si el cliente está registrado pero aún no tiene la app instalada
+          if (!installDismissed) {
+            setStep("install");
+          } else {
+            setShowFloatingButton(true);
+          }
+        }
+      }, 1500);
+
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+        window.removeEventListener("appinstalled", handleAppInstalled);
+        window.removeEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
+        clearTimeout(timer);
+      };
+    }
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
-      clearTimeout(timer);
+      window.removeEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
     };
-  }, []);
+  }, [cliente]);
 
   // Manejar acción de instalación
   const handleInstallClick = async () => {
@@ -104,9 +122,9 @@ export default function PwaPrompts() {
       // Mostrar tutorial interactivo para iPhone / iPad
       setStep("ios_guide");
     } else {
-      // Navegador que no disparó beforeinstallprompt aún (o escritorio sin prompt)
+      // Instrucción amigable de instalación
       alert(
-        "Para instalar la Web App en tu navegador, haz clic en el menú (tres puntos) y selecciona 'Instalar 0600Boston' o 'Agregar a la pantalla principal'."
+        "Para instalar 0600Boston en tu celular, haz clic en el menú del navegador (tres puntos ⋮ o compartir) y selecciona 'Instalar aplicación' o 'Agregar a pantalla de inicio'."
       );
       setStep("none");
       setShowFloatingButton(true);
@@ -117,7 +135,7 @@ export default function PwaPrompts() {
   const handleDismissInstall = () => {
     localStorage.setItem("pwa_install_dismissed_at", Date.now().toString());
     setStep("none");
-    setShowFloatingButton(true);
+    if (cliente) setShowFloatingButton(true);
   };
 
   // Manejar solicitud de notificaciones
@@ -134,27 +152,21 @@ export default function PwaPrompts() {
 
       if (permission === "granted") {
         setStep("notif_success");
-        // Enviar notificación de bienvenida si está disponible
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: "WELCOME_NOTIFICATION",
-          });
-        } else {
-          new Notification("¡Bienvenido a 0600Boston! 🍕☘️", {
-            body: "¡Genial! Vas a ser el primero en recibir nuestras ofertas relámpago y promociones exclusivas.",
-            icon: "/images/brunoagradece.webp",
-          });
-        }
+        // Notificación de bienvenida
+        new Notification("¡Bienvenido a 0600Boston! 🍕☘️", {
+          body: "¡Genial! Vas a ser el primero en recibir nuestras ofertas relámpago y promociones exclusivas.",
+          icon: "/images/brunoagradece.webp",
+        });
 
         setTimeout(() => {
           setStep("none");
-        }, 3200);
+        }, 3000);
       } else {
         localStorage.setItem("pwa_notif_dismissed_at", Date.now().toString());
         setStep("none");
       }
     } catch (err) {
-      console.error("Error pidiendo permiso de notificaciones:", err);
+      console.error("Error al pedir notificaciones:", err);
       setStep("none");
     }
   };
@@ -167,14 +179,14 @@ export default function PwaPrompts() {
 
   return (
     <>
-      {/* Botón Flotante Discreto cuando se descartó el banner */}
-      {showFloatingButton && !isStandalone && step === "none" && (
+      {/* Botón Flotante Discreto con fondo biselado translúcido */}
+      {showFloatingButton && !isStandalone && step === "none" && cliente && (
         <button
           onClick={() => setStep("install")}
-          className="fixed bottom-4 left-4 z-40 bg-black/80 hover:bg-black backdrop-blur-md text-white border-2 border-emerald-400/90 rounded-full px-3.5 py-2 flex items-center gap-2.5 shadow-xl shadow-emerald-950/50 hover:scale-105 active:scale-95 transition-all text-xs font-black animate-fade-in"
+          className="fixed bottom-4 left-4 z-40 bg-black/30 hover:bg-black/50 backdrop-blur-md text-white border border-emerald-400/60 rounded-full px-3.5 py-2 flex items-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_8px_20px_rgba(0,0,0,0.5)] hover:scale-105 active:scale-95 transition-all text-xs font-black animate-fade-in cursor-pointer"
           title="Instalar App 0600Boston"
         >
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-emerald-400 bg-white shrink-0">
+          <div className="w-6 h-6 rounded-full overflow-hidden border border-emerald-400 bg-white shrink-0 shadow-sm">
             <img
               src="/images/brunodescarga.webp"
               alt="Bruno"
@@ -186,11 +198,11 @@ export default function PwaPrompts() {
         </button>
       )}
 
-      {/* MODAL / BANNER FLOTANTE PRINCIPAL */}
+      {/* MODAL / BANNER FLOTANTE CON FONDO BISELADO TRANSPARENTE AL 90% */}
       {step !== "none" && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm transition-all duration-300">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/35 backdrop-blur-[2px] transition-all duration-300">
           <div
-            className="relative w-full max-w-lg bg-[#0c141d]/95 backdrop-blur-xl border-2 border-emerald-500/80 rounded-3xl p-5 sm:p-6 shadow-[0_15px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(16,185,129,0.2)] text-white animate-fade-in-up"
+            className="relative w-full max-w-lg bg-black/20 backdrop-blur-md border border-emerald-400/50 rounded-3xl p-5 sm:p-6 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_15px_40px_rgba(0,0,0,0.6)] text-white animate-fade-in-up"
             role="dialog"
             aria-modal="true"
           >
@@ -200,24 +212,24 @@ export default function PwaPrompts() {
                 if (step === "install" || step === "ios_guide") handleDismissInstall();
                 else handleDismissNotif();
               }}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center text-sm font-bold transition-all"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center text-sm font-bold transition-all border border-white/15 cursor-pointer"
               aria-label="Cerrar"
             >
               ✕
             </button>
 
-            {/* CASO 1: INVITACIÓN A INSTALAR APP (Con Bruno Descraga) */}
+            {/* CASO 1: INVITACIÓN A INSTALAR APP (Tras registro, con Bruno Descraga) */}
             {step === "install" && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-300 bg-black/30 backdrop-blur-sm border border-emerald-400/50 px-2.5 py-0.5 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
                     ☘️ Web App Oficial 0600Boston
                   </span>
                 </div>
 
                 <div className="flex flex-row items-center gap-4 sm:gap-5 mb-4">
-                  {/* AVATAR BRUNO ADAPTADO AL DISEÑO */}
-                  <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-white to-emerald-50 p-1 border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] overflow-hidden flex items-center justify-center group">
+                  {/* AVATAR BRUNO ADAPTADO AL FONDO BISELADO */}
+                  <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-white to-emerald-50 p-1 border border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.35)] overflow-hidden flex items-center justify-center group">
                     <img
                       src="/images/brunodescarga.webp"
                       alt="Bruno te invita a descargar la app"
@@ -230,49 +242,49 @@ export default function PwaPrompts() {
 
                   {/* TEXTO Y TÍTULO */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
                       ¡Instalá nuestra App en tu teléfono! 📲
                     </h3>
-                    <p className="text-xs text-emerald-200/90 font-medium mt-1">
-                      Disfrutá una experiencia más ágil, directa y cómoda para pedir tus pizzas favoritas.
+                    <p className="text-xs text-emerald-100/90 font-medium mt-1 drop-shadow-sm">
+                      Tu cuenta ya está lista. Descargá el acceso directo para pedir de forma inmediata y sin demoras.
                     </p>
                   </div>
                 </div>
 
-                {/* BENEFICIOS DE LA WEB SAS */}
-                <div className="bg-black/40 border border-emerald-500/30 rounded-2xl p-3 sm:p-3.5 mb-5 space-y-2">
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">⚡</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">1 Toque de acceso:</strong> Entrá directamente desde tu pantalla de inicio sin usar tiendas.
+                {/* BENEFICIOS CON FONDO BISELADO TRANSLÚCIDO */}
+                <div className="bg-black/30 backdrop-blur-sm border border-emerald-400/25 rounded-2xl p-3.5 mb-5 space-y-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">⚡</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">1 Toque de acceso:</strong> Entrá directo desde tu pantalla de inicio sin usar tiendas.
                     </span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">💾</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">0% Espacio:</strong> No llena la memoria de tu móvil ni gasta recursos.
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">💾</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">0% Espacio:</strong> No consume memoria ni ralentiza tu teléfono.
                     </span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">🍕</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">Pedidos en segundos:</strong> Tus direcciones y datos listos para enviar al WhatsApp al instante.
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">🍕</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">Pedidos ultra rápidos:</strong> Tus datos y dirección ya quedan guardados para enviar en 1 clic.
                     </span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">🎁</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">Beneficios exclusivos:</strong> Promos especiales solo para clientes con la app instalada.
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">🎁</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">Beneficios exclusivos:</strong> Promociones únicas solo disponibles para la app.
                     </span>
                   </div>
                 </div>
 
-                {/* BOTONES DE ACCIÓN */}
+                {/* BOTONES DE ACCIÓN BISELADOS */}
                 <div className="flex flex-col sm:flex-row items-center gap-2.5">
                   <button
                     type="button"
                     onClick={handleInstallClick}
-                    className="w-full py-3 px-5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:brightness-110 active:scale-98 shadow-lg shadow-emerald-950/60 border border-emerald-400/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-3.5 px-5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:brightness-110 active:scale-98 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_8px_20px_rgba(16,185,129,0.35)] border border-emerald-400/60 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <span>Descargar e Instalar App</span>
                     <span className="text-base">🚀</span>
@@ -281,7 +293,7 @@ export default function PwaPrompts() {
                   <button
                     type="button"
                     onClick={handleDismissInstall}
-                    className="w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                    className="w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold text-white/80 hover:text-white bg-black/20 hover:bg-black/40 border border-white/15 transition-all cursor-pointer"
                   >
                     Más tarde
                   </button>
@@ -289,41 +301,41 @@ export default function PwaPrompts() {
               </div>
             )}
 
-            {/* CASO 1.5: GUÍA PARA iOS SAFARI */}
+            {/* CASO 1.5: GUÍA PARA iOS SAFARI CON FONDO BISELADO */}
             {step === "ios_guide" && (
               <div className="text-left">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-300 bg-black/30 backdrop-blur-sm border border-emerald-400/40 px-2.5 py-0.5 rounded-full">
                     📱 Instrucciones para iPhone / iPad
                   </span>
                 </div>
 
-                <h3 className="text-lg font-black text-white mb-2">
+                <h3 className="text-lg font-black text-white mb-2 drop-shadow-md">
                   Cómo agregar 0600Boston a tu pantalla:
                 </h3>
 
-                <div className="space-y-3 bg-black/40 border border-emerald-500/30 rounded-2xl p-4 mb-4 text-xs">
+                <div className="space-y-3 bg-black/30 backdrop-blur-sm border border-emerald-400/25 rounded-2xl p-4 mb-4 text-xs shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
                   <div className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-bold flex items-center justify-center shrink-0">
                       1
                     </span>
-                    <p className="text-slate-200">
-                      Toca el botón <strong className="text-white">Compartir</strong> (icono del cuadro con flecha hacia arriba ⎋) en la barra de Safari.
+                    <p className="text-slate-100">
+                      Toca el botón <strong className="text-white">Compartir</strong> (icono del cuadrado con flecha hacia arriba ⎋) en la barra de Safari.
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-bold flex items-center justify-center shrink-0">
                       2
                     </span>
-                    <p className="text-slate-200">
-                      Desplaza las opciones y pulsa en <strong className="text-white">&quot;Agregar a pantalla de inicio&quot;</strong> ➕.
+                    <p className="text-slate-100">
+                      Desplaza las opciones hacia abajo y pulsa en <strong className="text-white">&quot;Agregar a pantalla de inicio&quot;</strong> ➕.
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 font-bold flex items-center justify-center shrink-0">
                       3
                     </span>
-                    <p className="text-slate-200">
+                    <p className="text-slate-100">
                       Confirma tocando <strong className="text-white">&quot;Agregar&quot;</strong> en la esquina superior derecha.
                     </p>
                   </div>
@@ -331,28 +343,26 @@ export default function PwaPrompts() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setStep("notifications");
-                  }}
-                  className="w-full py-3 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:brightness-110 transition-all cursor-pointer"
+                  onClick={() => setStep("notifications")}
+                  className="w-full py-3 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 to-green-600 hover:brightness-110 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)] border border-emerald-400/50 transition-all cursor-pointer"
                 >
                   ¡Entendido! Ya la agregué 👍
                 </button>
               </div>
             )}
 
-            {/* CASO 2: INVITACIÓN A NOTIFICACIONES (Con Bruno Agradece) */}
+            {/* CASO 2: INVITACIÓN A NOTIFICACIONES (Con Bruno Agradece y fondo biselado) */}
             {step === "notifications" && (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
-                    🎉 ¡Gracias por elegir 0600Boston!
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-300 bg-black/30 backdrop-blur-sm border border-emerald-400/50 px-2.5 py-0.5 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                    🎉 ¡Gracias por sumar 0600Boston!
                   </span>
                 </div>
 
                 <div className="flex flex-row items-center gap-4 sm:gap-5 mb-4">
-                  {/* AVATAR BRUNO AGRADECE ADAPTADO */}
-                  <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-white to-emerald-50 p-1 border-2 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] overflow-hidden flex items-center justify-center">
+                  {/* AVATAR BRUNO AGRADECE */}
+                  <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-white via-white to-emerald-50 p-1 border border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.35)] overflow-hidden flex items-center justify-center">
                     <img
                       src="/images/brunoagradece.webp"
                       alt="Bruno agradece y te invita a recibir notificaciones"
@@ -365,33 +375,33 @@ export default function PwaPrompts() {
 
                   {/* TEXTO Y TÍTULO */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight">
+                    <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
                       ¡Recibí ofertas y promos exclusivas! 🔔
                     </h3>
-                    <p className="text-xs text-emerald-200/90 font-medium mt-1">
-                      ¡Bruno y el equipo te avisan cuando salgan promociones relámpago y pizzas con descuento!
+                    <p className="text-xs text-emerald-100/90 font-medium mt-1 drop-shadow-sm">
+                      ¡Bruno y el equipo te avisan al instante cuando salgan promociones relámpago y pizzas con descuento!
                     </p>
                   </div>
                 </div>
 
                 {/* QUÉ RECIBIRÁN */}
-                <div className="bg-black/40 border border-emerald-500/30 rounded-2xl p-3 sm:p-3.5 mb-5 space-y-2">
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">🔥</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">Ofertas Flash y 2x1:</strong> Descuentos de tiempo limitado antes de que se agote el stock.
+                <div className="bg-black/30 backdrop-blur-sm border border-emerald-400/25 rounded-2xl p-3.5 mb-5 space-y-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">🔥</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">Ofertas Flash y 2x1:</strong> Descuentos por tiempo limitado antes de que se agote el stock.
                     </span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">🛵</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">Avisos de tu pedido:</strong> Te avisamos cuando la pizza entra al horno y sale en camino.
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">🛵</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">Avisos de tu pedido:</strong> Te avisamos en vivo cuando la pizza entra al horno y sale en viaje.
                     </span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs">
-                    <span className="text-emerald-400 text-sm leading-none shrink-0">🎁</span>
-                    <span className="text-slate-200 font-medium">
-                      <strong className="text-white font-bold">Cupones sorpresas:</strong> Regalos y descuentos en días especiales para usuarios de la app.
+                  <div className="flex items-start gap-2.5 text-xs">
+                    <span className="text-emerald-400 text-sm leading-none shrink-0 drop-shadow-sm">🎁</span>
+                    <span className="text-slate-100 font-medium">
+                      <strong className="text-white font-bold">Cupones sorpresa:</strong> Regalos y descuentos en días especiales para usuarios de la app.
                     </span>
                   </div>
                 </div>
@@ -401,7 +411,7 @@ export default function PwaPrompts() {
                   <button
                     type="button"
                     onClick={handleRequestNotifications}
-                    className="w-full py-3 px-5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:brightness-110 active:scale-98 shadow-lg shadow-emerald-950/60 border border-emerald-400/50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-3.5 px-5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:brightness-110 active:scale-98 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_8px_20px_rgba(16,185,129,0.35)] border border-emerald-400/60 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     <span>Activar Notificaciones</span>
                     <span className="text-base">🔔</span>
@@ -410,7 +420,7 @@ export default function PwaPrompts() {
                   <button
                     type="button"
                     onClick={handleDismissNotif}
-                    className="w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 transition-all cursor-pointer"
+                    className="w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-bold text-white/80 hover:text-white bg-black/20 hover:bg-black/40 border border-white/15 transition-all cursor-pointer"
                   >
                     Ahora no
                   </button>
@@ -424,10 +434,10 @@ export default function PwaPrompts() {
                 <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(16,185,129,0.5)]">
                   🎉
                 </div>
-                <h3 className="text-xl font-black text-white mb-1">
+                <h3 className="text-xl font-black text-white mb-1 drop-shadow-md">
                   ¡Notificaciones Activadas!
                 </h3>
-                <p className="text-xs text-emerald-200 max-w-xs mx-auto">
+                <p className="text-xs text-emerald-100 max-w-xs mx-auto drop-shadow-sm">
                   ¡Genial! Vas a ser el primero en recibir nuestras promociones exclusivas. Bruno te lo agradece.
                 </p>
               </div>

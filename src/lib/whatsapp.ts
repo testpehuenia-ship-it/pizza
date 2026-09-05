@@ -7,7 +7,13 @@ export function generarMensajeWhatsApp(
   bebidas: ItemCarritoBebida[],
   tipoEntrega: "delivery" | "retiro",
   domicilio: string,
-  total: number
+  total: number,
+  datosGps?: {
+    lat: number;
+    lng: number;
+    calleAprox?: string;
+    nota?: string;
+  } | null
 ): string {
   let msg = `🍕 *PEDIDO - 0600BOSTON*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -19,7 +25,19 @@ export function generarMensajeWhatsApp(
   
   msg += `🛵 *Modalidad:* ${tipoEntrega === "delivery" ? "Delivery a Domicilio" : "Retiro en Local"}\n`;
   if (tipoEntrega === "delivery") {
-    msg += `🏠 *Dirección:* ${domicilio || cliente?.domicilio || "A coordinar"}\n`;
+    if (datosGps) {
+      msg += `📍 *Ubicación del Celular (GPS):*\n`;
+      if (datosGps.calleAprox) {
+        msg += `🏠 *Dirección aprox:* ${datosGps.calleAprox}\n`;
+      }
+      msg += `📌 *Coordenadas:* ${datosGps.lat.toFixed(6)}, ${datosGps.lng.toFixed(6)}\n`;
+      msg += `🗺️ *Mapa Repartidor:* https://www.google.com/maps?q=${datosGps.lat},${datosGps.lng}\n`;
+      if (datosGps.nota) {
+        msg += `📝 *Aclaración / Timbre:* ${datosGps.nota}\n`;
+      }
+    } else {
+      msg += `🏠 *Dirección de Entrega:* ${domicilio || cliente?.domicilio || "A coordinar"}\n`;
+    }
   }
   msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
   msg += `📋 *DETALLE DEL PEDIDO:*\n\n`;

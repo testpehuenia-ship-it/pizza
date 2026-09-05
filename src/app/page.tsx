@@ -51,6 +51,13 @@ export default function HomePage() {
       // Guardamos la sesión en el store
       setCliente(data.cliente);
       setModo("inicio");
+
+      // Disparar invitación a descargar la App únicamente después de registrarse
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("pwa:trigger-install-prompt"));
+        }
+      }, 700);
     } catch (err: any) {
       setErrorMsg(err.message || "Ocurrió un error.");
     } finally {
@@ -117,17 +124,17 @@ export default function HomePage() {
         
         {/* CASO 1: Si ya está registrado o logueado -> Mensaje de Bienvenida y Ver Carta */}
         {cliente && modo === "inicio" && (
-          <div className="bg-black/60 backdrop-blur-md border-2 border-emerald-500/80 rounded-3xl p-6 shadow-2xl text-center fade-in-up">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/70 border border-emerald-400 text-emerald-300 text-xs font-bold mb-3">
+          <div className="bg-black/15 backdrop-blur-md border border-emerald-400/50 rounded-3xl p-6 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_12px_40px_rgba(0,0,0,0.5)] text-center fade-in-up">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-emerald-400/60 text-emerald-300 text-xs font-bold mb-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
               <span>☘️</span>
               <span>Cliente Identificado</span>
             </div>
 
-            <h1 className="text-3xl font-black text-white tracking-tight mb-1">
+            <h1 className="text-3xl font-black text-white tracking-tight mb-1 drop-shadow-md">
               ¡Hola, <span className="text-emerald-400">{cliente.nombre}</span>!
             </h1>
 
-            <p className="text-xs text-emerald-100/90 mb-4 leading-relaxed">
+            <p className="text-xs text-emerald-100/90 mb-4 leading-relaxed drop-shadow-sm">
               Tu pedido llegará a:{" "}
               <strong className="text-white">
                 {cliente.direccion} {cliente.barrio ? `(${cliente.barrio})` : ""}
@@ -137,7 +144,7 @@ export default function HomePage() {
             {/* Botón Verde: Ver la Carta y Armar Pedido */}
             <button
               onClick={handleEntrarAlMenu}
-              className="w-full py-4 px-6 rounded-2xl font-black text-base text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-xl shadow-emerald-900/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 px-6 rounded-2xl font-black text-base text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_10px_25px_rgba(16,185,129,0.4)] border border-emerald-400/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Ver la Carta & Armar Pedido</span>
               <span className="text-lg">🍕</span>
@@ -145,7 +152,7 @@ export default function HomePage() {
 
             <button
               onClick={() => setModo("login")}
-              className="mt-3 text-[11px] text-emerald-300/80 hover:text-emerald-200 underline"
+              className="mt-3 text-[11px] text-emerald-300/90 hover:text-emerald-200 underline cursor-pointer"
             >
               Ingresar con otro usuario
             </button>
@@ -172,7 +179,7 @@ export default function HomePage() {
                   setErrorMsg("");
                   setModo("registro");
                 }}
-                className="py-3.5 px-4 rounded-2xl font-black text-sm text-white bg-black/30 backdrop-blur-[2px] border-2 border-emerald-400 hover:bg-emerald-500/25 active:scale-95 transition-all shadow-lg shadow-black/40 flex items-center justify-center gap-1.5"
+                className="py-3.5 px-4 rounded-2xl font-black text-sm text-white bg-black/20 backdrop-blur-sm border-2 border-emerald-400 hover:bg-emerald-500/25 active:scale-95 transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_8px_20px_rgba(0,0,0,0.4)] flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Crear Cuenta</span>
                 <span>✨</span>
@@ -184,7 +191,7 @@ export default function HomePage() {
                   setErrorMsg("");
                   setModo("login");
                 }}
-                className="py-3.5 px-4 rounded-2xl font-black text-sm text-white bg-black/30 backdrop-blur-[2px] border-2 border-emerald-400 hover:bg-emerald-500/25 active:scale-95 transition-all shadow-lg shadow-black/40 flex items-center justify-center gap-1.5"
+                className="py-3.5 px-4 rounded-2xl font-black text-sm text-white bg-black/20 backdrop-blur-sm border-2 border-emerald-400 hover:bg-emerald-500/25 active:scale-95 transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_8px_20px_rgba(0,0,0,0.4)] flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span>Inicio</span>
                 <span>🔑</span>
@@ -195,7 +202,7 @@ export default function HomePage() {
 
         {/* CASO 3: Formulario de Alta / Registro de Cliente */}
         {modo === "registro" && (
-          <div className="bg-black/75 backdrop-blur-md border-2 border-emerald-400 rounded-3xl p-5 sm:p-6 shadow-2xl text-left fade-in-up">
+          <div className="bg-black/20 backdrop-blur-md border border-emerald-400/50 rounded-3xl p-5 sm:p-6 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_12px_40px_rgba(0,0,0,0.6)] text-left fade-in-up">
             <div className="flex items-center justify-between mb-3 border-b border-emerald-500/30 pb-2">
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-1.5">
@@ -336,7 +343,7 @@ export default function HomePage() {
 
         {/* CASO 4: Formulario de Inicio de Sesión (x Usuario) */}
         {modo === "login" && (
-          <div className="bg-black/75 backdrop-blur-md border-2 border-emerald-400 rounded-3xl p-5 sm:p-6 shadow-2xl text-left fade-in-up">
+          <div className="bg-black/20 backdrop-blur-md border border-emerald-400/50 rounded-3xl p-5 sm:p-6 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_12px_40px_rgba(0,0,0,0.6)] text-left fade-in-up">
             <div className="flex items-center justify-between mb-4 border-b border-emerald-500/30 pb-2">
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-1.5">

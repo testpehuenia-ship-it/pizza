@@ -68,7 +68,7 @@ export default function FormularioRegistro() {
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] p-4 select-none">
       <div className="bg-white border border-emerald-100 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-[0_15px_40px_rgba(20,83,45,0.08)] fade-in-up">
         <div className="text-center mb-6">
-          <span className="text-4xl mb-2 inline-block">☘️</span>
+          <span className="text-4xl mb-2 inline-block">🍀</span>
           <h2 className="text-2xl font-black text-[#14532d]">Tus Datos de Envío</h2>
           <p className="text-xs text-[#4b6b55] mt-1">
             Completá tus datos para que el delivery llegue directo a tu puerta

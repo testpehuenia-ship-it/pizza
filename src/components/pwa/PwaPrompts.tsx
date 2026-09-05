@@ -189,7 +189,7 @@ export default function PwaPrompts() {
         setStep("notif_success");
 
         // Notificación de bienvenida
-        new Notification("¡Bienvenido a 0600Boston! 🍕☘️", {
+        new Notification("¡Bienvenido a 0600Boston! 🍕🍀", {
           body: "¡Genial! Vas a ser el primero en recibir nuestras ofertas relámpago y promociones exclusivas.",
           icon: "/images/brunoagradece.webp",
         });
@@ -273,7 +273,7 @@ export default function PwaPrompts() {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs font-black uppercase tracking-wider text-emerald-300 bg-black/30 backdrop-blur-sm border border-emerald-400/50 px-2.5 py-0.5 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
-                    ☘️ Web App Oficial 0600Boston
+                    🍀 Web App Oficial 0600Boston
                   </span>
                 </div>
 

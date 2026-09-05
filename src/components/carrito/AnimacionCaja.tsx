@@ -65,7 +65,7 @@ export function AnimacionCaja({ pizzaNombre, onCerrar }: AnimacionCajaProps) {
               <div className="w-32 h-32 rounded-2xl bg-gradient-to-br from-[#c9935a] via-[#a66e38] to-[#78350f] border-2 border-emerald-600/60 shadow-xl flex flex-col items-center justify-center relative animate-pulse-subtle">
                 <span className="text-4xl drop-shadow">🍕</span>
                 <div className="mt-1 bg-white/95 px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-[#15803d] shadow-sm uppercase flex items-center gap-1">
-                  <span>☘️</span> 0600BOSTON
+                  <span>🍀</span> 0600BOSTON
                 </div>
               </div>
             </div>

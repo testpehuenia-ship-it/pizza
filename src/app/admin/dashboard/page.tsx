@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Logo / Título */}
           <div className="flex items-center gap-2.5">
-            <span className="text-2xl">☘️</span>
+            <span className="text-2xl">🍀</span>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-white text-base tracking-wide">

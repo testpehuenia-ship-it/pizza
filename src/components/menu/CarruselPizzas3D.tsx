@@ -105,7 +105,7 @@ export function CarruselPizzas3D({
       {/* Título de la Pizza y Guía Táctil */}
       <div className="text-center mb-3">
         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold tracking-wide uppercase">
-          ☘️ Variedad #{activeIndex + 1} de {pizzas.length}
+          🍀 Variedad #{activeIndex + 1} de {pizzas.length}
         </span>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#14532d] mt-1 tracking-tight">
           {pizzaActual.nombre}

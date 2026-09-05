@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { PushNotificationRecord } from "@/lib/push-db";
 
 interface PushAdminProps {
@@ -11,13 +11,49 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [historial, setHistorial] = useState<PushNotificationRecord[]>([]);
   const [cargando, setCargando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [subiendoIcono, setSubiendoIcono] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Formulario de emisión
   const [formTitulo, setFormTitulo] = useState("🔥 ¡Promo Relámpago en 0600Boston! 🍕");
   const [formMensaje, setFormMensaje] = useState("Hoy 20% de descuento en tu pizza grande favorita. ¡Pedí ahora por la app!");
   const [formUrl, setFormUrl] = useState("/menu");
-  const [formIcono, setFormIcono] = useState("🍕");
+  const [formIcono, setFormIcono] = useState("🍀");
   const [formDestinatarios, setFormDestinatarios] = useState("Todos los Clientes");
+
+  const handleSubirIcono = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      onMostrarNotificacion("Por favor seleccioná un archivo de imagen válido (PNG, WebP, JPG, SVG).", "error");
+      return;
+    }
+
+    setSubiendoIcono(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("removeBg", "true");
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "No se pudo procesar la imagen del icono");
+      }
+
+      setFormIcono(data.url);
+      onMostrarNotificacion("¡Imagen optimizada y convertida a icono push con éxito!", "exito");
+    } catch (err: any) {
+      onMostrarNotificacion(`Error al cargar icono: ${err.message}`, "error");
+    } finally {
+      setSubiendoIcono(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const cargarHistorial = async () => {
     setCargando(true);
@@ -173,26 +209,80 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase text-emerald-400 mb-1">
-                Icono Emoji
-              </label>
-              <div className="flex gap-1.5">
-                {["🍕", "🔥", "☘️", "🎁", "🛵", "🥤"].map((ico) => (
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-bold uppercase text-emerald-400">
+                  Icono / Emoji
+                </label>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={subiendoIcono}
+                  className="text-[10px] font-bold text-emerald-300 hover:text-emerald-200 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-all cursor-pointer"
+                >
+                  <span>🖼️</span>
+                  <span>{subiendoIcono ? "Procesando..." : "Subir Imagen / Icono"}</span>
+                </button>
+              </div>
+
+              {/* Input oculto para subir icono */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/webp,image/jpeg,image/svg+xml"
+                onChange={handleSubirIcono}
+                className="hidden"
+              />
+
+              {/* Presets rápidos con Trébol de 4 Hojas */}
+              <div className="flex gap-1 mb-2 flex-wrap">
+                {["🍕", "🔥", "🍀", "🎁", "🛵", "🥤", "⭐", "🎉"].map((ico) => (
                   <button
                     key={ico}
                     type="button"
                     onClick={() => setFormIcono(ico)}
-                    className={`flex-1 py-1.5 rounded-xl text-sm transition-all border ${
+                    className={`px-2.5 py-1 rounded-xl text-sm transition-all border cursor-pointer ${
                       formIcono === ico
-                        ? "bg-emerald-500/30 border-emerald-400"
-                        : "bg-[#0d141e] border-white/10 hover:border-white/20"
+                        ? "bg-emerald-500/30 border-emerald-400 text-white"
+                        : "bg-[#0d141e] border-white/10 hover:border-white/20 text-slate-300"
                     }`}
                   >
                     {ico}
                   </button>
                 ))}
               </div>
+
+              {/* Input para Emoji personalizado o URL de icono */}
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-[#0d141e] border border-white/15 flex items-center justify-center shrink-0 overflow-hidden text-lg">
+                  {formIcono.startsWith("http") || formIcono.startsWith("/") ? (
+                    <img src={formIcono} alt="Icono" className="w-full h-full object-contain p-0.5" />
+                  ) : (
+                    formIcono
+                  )}
+                </div>
+                <input
+                  type="text"
+                  value={formIcono}
+                  onChange={(e) => setFormIcono(e.target.value)}
+                  placeholder="Emoji o /ruta/icono.png"
+                  className="flex-1 bg-[#0d141e] border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"
+                />
+              </div>
             </div>
+          </div>
+
+          {/* Tarjeta de Especificaciones y Requisitos de Iconos Push */}
+          <div className="bg-[#0d141e]/80 border border-emerald-500/30 rounded-2xl p-3.5 text-xs">
+            <div className="flex items-center gap-2 text-emerald-300 font-bold text-[11px] uppercase tracking-wide mb-1.5">
+              <span>ℹ️</span>
+              <span>Requisitos para Iconos de Notificaciones Push (Web Push Standard):</span>
+            </div>
+            <ul className="text-slate-300 text-[11px] space-y-1 list-disc list-inside">
+              <li><strong className="text-white">Formatos admitidos:</strong> .png, .webp, .jpg o .svg. (Recomendado: <em>PNG transparente</em> o <em>WebP</em>).</li>
+              <li><strong className="text-white">Proporción recomendada:</strong> Cuadrada 1:1. Tamaño óptimo: <strong>192 × 192 px</strong> o <strong>512 × 512 px</strong>.</li>
+              <li><strong className="text-white">Peso máximo:</strong> Menos de 1 MB (el sistema optimiza y reduce automáticamente a &lt; 50 KB).</li>
+              <li><strong className="text-white">Conversor automático:</strong> Al subir cualquier imagen o logo, el sistema recorta bordes vacíos y elimina fondos sólidos automáticamente para adaptarlo a icono web push.</li>
+            </ul>
           </div>
 
           <div>
@@ -248,8 +338,12 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
               Vista previa en pantalla del cliente:
             </span>
             <div className="bg-[#182333] border border-emerald-500/30 rounded-xl p-3 flex items-start gap-3 shadow-md max-w-md">
-              <div className="w-10 h-10 rounded-xl bg-[#0d141e] border border-emerald-400 flex items-center justify-center text-xl shrink-0">
-                {formIcono}
+              <div className="w-10 h-10 rounded-xl bg-[#0d141e] border border-emerald-400 flex items-center justify-center text-xl shrink-0 overflow-hidden">
+                {formIcono.startsWith("http") || formIcono.startsWith("/") ? (
+                  <img src={formIcono} alt="Icono Preview" className="w-full h-full object-contain p-0.5" />
+                ) : (
+                  <span>{formIcono}</span>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
@@ -299,9 +393,15 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
               className="bg-[#0d141e] border border-white/5 hover:border-emerald-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md"
             >
               <div className="flex items-start gap-3">
-                <span className="text-2xl p-2 bg-[#151f2e] border border-white/10 rounded-xl shrink-0">
-                  {push.icono}
-                </span>
+                {push.icono?.startsWith("http") || push.icono?.startsWith("/") ? (
+                  <div className="w-10 h-10 p-1 bg-[#151f2e] border border-white/10 rounded-xl shrink-0 flex items-center justify-center overflow-hidden">
+                    <img src={push.icono} alt="Icono" className="w-full h-full object-contain" />
+                  </div>
+                ) : (
+                  <span className="text-2xl p-2 bg-[#151f2e] border border-white/10 rounded-xl shrink-0">
+                    {push.icono}
+                  </span>
+                )}
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-extrabold text-white text-sm">{push.titulo}</h4>

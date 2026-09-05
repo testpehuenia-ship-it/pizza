@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useTiendaStore } from "@/lib/store";
 import { generarMensajeWhatsApp } from "@/lib/whatsapp";
 import Link from "next/link";
@@ -94,7 +95,10 @@ export default function PedidoPage() {
     );
   };
 
-  const handleConfirmar = () => {
+  const router = useRouter();
+  const [pedidoEnviado, setPedidoEnviado] = useState(false);
+
+  const handleEnviarPedidoWhatsApp = () => {
     if (tipoEntrega === "delivery") {
       if (modoDireccion === "gps" && !gpsData) {
         alert("Por favor pulsa en 'Detectar mi ubicación del celular' o escribe tu dirección.");
@@ -105,34 +109,60 @@ export default function PedidoPage() {
         return;
       }
     }
-    setDomicilioEntrega(domicilio);
-    setConfirmado(true);
+
+    if (pizzas.length === 0 && bebidas.length === 0 && (!combos || combos.length === 0)) {
+      alert("Tu carrito está vacío. Sumá tus pizzas o bebidas antes de pedir.");
+      return;
+    }
+
+    // Generar URL con el detalle completo y total
+    const url = generarMensajeWhatsApp(
+      cliente,
+      pizzas,
+      bebidas,
+      tipoEntrega,
+      domicilio,
+      total,
+      modoDireccion === "gps" && gpsData ? { ...gpsData, nota: notaEntrega } : null,
+      combos
+    );
+
+    // 1. Abrir WhatsApp en pestaña / aplicación
+    window.open(url, "_blank");
+
+    // 2. Vaciar carrito de la tienda
+    vaciarCarrito();
+    setPedidoEnviado(true);
+
+    // 3. Volver al inicio automáticamente tras breve confirmación
+    setTimeout(() => {
+      router.push("/");
+    }, 1600);
   };
 
-  const urlWhatsApp = generarMensajeWhatsApp(
-    cliente,
-    pizzas,
-    bebidas,
-    tipoEntrega,
-    domicilio,
-    total,
-    modoDireccion === "gps" && gpsData ? { ...gpsData, nota: notaEntrega } : null,
-    combos
-  );
-
-  if (pizzas.length === 0 && bebidas.length === 0 && combos.length === 0 && !confirmado) {
+  if (pizzas.length === 0 && bebidas.length === 0 && (!combos || combos.length === 0) && !pedidoEnviado) {
     return (
       <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
         <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-8 text-center shadow-sm fade-in-up">
           <span className="text-4xl block mb-2">🛒</span>
           <h3 className="text-base font-bold text-[#14532d] mb-1">Tu carrito está vacío</h3>
           <p className="text-xs text-[#4b6b55] mb-4">Sumá tus pizzas favoritas en el menú para confirmar tu pedido.</p>
-          <Link
-            href="/menu"
-            className="inline-block py-2.5 px-5 rounded-full bg-[#15803d] text-white text-xs font-bold shadow-md shadow-emerald-700/20"
-          >
-            Ir a la Carta 🍕
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
+            <Link
+              href="/menu"
+              className="w-full sm:w-auto py-2.5 px-5 rounded-full bg-[#15803d] text-white text-xs font-bold shadow-md shadow-emerald-700/20 hover:brightness-110 active:scale-95 transition-all"
+            >
+              Ir a la Carta 🍕
+            </Link>
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="w-full sm:w-auto py-2.5 px-5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs font-black shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>🚪</span>
+              <span>Salir</span>
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -141,7 +171,26 @@ export default function PedidoPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
       <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-6 sm:p-8 shadow-[0_15px_40px_rgba(20,83,45,0.08)] fade-in-up">
-        {!confirmado ? (
+        {/* Barra Superior con botón Salir destacado */}
+        <div className="flex items-center justify-between pb-3 border-b border-emerald-100/80 mb-4">
+          <Link
+            href="/menu"
+            className="text-xs font-bold text-[#4b6b55] hover:text-[#14532d] flex items-center gap-1 transition-colors"
+          >
+            <span>←</span>
+            <span>Volver a la Carta</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>🚪</span>
+            <span>Salir</span>
+          </button>
+        </div>
+
+        {!pedidoEnviado ? (
           <div>
             <div className="text-center mb-5">
               <span className="text-4xl inline-block mb-1">🛵</span>
@@ -149,23 +198,31 @@ export default function PedidoPage() {
               <p className="text-xs text-[#4b6b55] mt-1">Elegí la modalidad y dirección de entrega</p>
             </div>
 
-            {/* Resumen breve de productos */}
-            <div className="bg-emerald-50/50 rounded-2xl p-3 border border-emerald-100/80 text-xs mb-4">
-              <div className="flex justify-between items-center mb-1 text-[#4b6b55] font-bold text-[11px] uppercase">
+            {/* Resumen de productos incluyendo pizzas, combos y bebidas */}
+            <div className="bg-emerald-50/50 rounded-2xl p-3.5 border border-emerald-100/80 text-xs mb-4">
+              <div className="flex justify-between items-center mb-2 text-[#4b6b55] font-bold text-[11px] uppercase tracking-wide">
                 <span>Tu Selección:</span>
-                <span>{pizzas.length + bebidas.reduce((a, b) => a + b.cantidad, 0)} items</span>
+                <span>
+                  {pizzas.length + (combos?.length || 0) + bebidas.reduce((a, b) => a + b.cantidad, 0)} items
+                </span>
               </div>
-              <div className="space-y-1 text-[#14532d] font-semibold">
+              <div className="space-y-1.5 text-[#14532d] font-semibold">
                 {pizzas.map((p, i) => (
-                  <div key={i} className="flex justify-between">
-                    <span>🍕 {p.pizza.nombre} ({p.tamaño}p)</span>
-                    <span className="font-mono font-bold">${p.precio.toLocaleString("es-AR")}</span>
+                  <div key={i} className="flex justify-between items-center">
+                    <span>🍕 {p.pizza?.nombre || "Pizza"} ({p.tamaño || "8"}p)</span>
+                    <span className="font-mono font-bold">${(Number(p.precio) || 0).toLocaleString("es-AR")}</span>
+                  </div>
+                ))}
+                {combos && combos.map((c, i) => (
+                  <div key={`c-${i}`} className="flex justify-between items-center text-emerald-900 font-bold">
+                    <span>🎁 {c.cantidad}x {c.combo?.nombre || "Combo"}</span>
+                    <span className="font-mono">${((Number(c.precioUnitario || c.combo?.precio) || 0) * (Number(c.cantidad) || 1)).toLocaleString("es-AR")}</span>
                   </div>
                 ))}
                 {bebidas.map((b, i) => (
-                  <div key={i} className="flex justify-between text-[#4b6b55]">
-                    <span>🥤 {b.cantidad}x {b.bebida.nombre}</span>
-                    <span className="font-mono">${(b.precioUnitario * b.cantidad).toLocaleString("es-AR")}</span>
+                  <div key={`b-${i}`} className="flex justify-between items-center text-[#4b6b55]">
+                    <span>🥤 {b.cantidad}x {b.bebida?.nombre || "Bebida"}</span>
+                    <span className="font-mono">${((Number(b.precioUnitario || b.bebida?.precio) || 0) * (Number(b.cantidad) || 1)).toLocaleString("es-AR")}</span>
                   </div>
                 ))}
               </div>
@@ -376,54 +433,53 @@ export default function PedidoPage() {
               <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100 flex justify-between items-center">
                 <span className="text-xs font-bold text-[#4b6b55]">Total a pagar:</span>
                 <span className="text-2xl font-black text-[#15803d] font-mono">
-                  ${total.toLocaleString("es-AR")}
+                  ${(Number(total) || 0).toLocaleString("es-AR")}
                 </span>
               </div>
 
               <button
                 type="button"
-                onClick={handleConfirmar}
-                className="w-full py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all"
+                onClick={handleEnviarPedidoWhatsApp}
+                className="w-full py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                Enviar Pedido por WhatsApp 💬
+                <span>Enviar Pedido por WhatsApp</span>
+                <span className="text-base">💬</span>
               </button>
 
-              <div className="text-center pt-2">
+              <div className="flex items-center justify-between pt-2">
                 <Link href="/menu" className="text-xs font-bold text-[#4b6b55] hover:text-[#14532d]">
                   ← Modificar carrito
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => router.push("/")}
+                  className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer"
+                >
+                  <span>🚪 Salir</span>
+                </button>
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-center py-4">
-            <span className="text-5xl inline-block mb-3">✅</span>
+          <div className="text-center py-6">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
+              💬
+            </div>
             <h3 className="text-2xl font-black text-[#14532d] mb-2">
-              ¡Pedido Confirmado!
+              ¡Pedido Enviado a WhatsApp!
             </h3>
             <p className="text-xs text-[#4b6b55] mb-6 leading-relaxed">
-              Tu pedido fue formateado. Al presionar el botón se abrirá WhatsApp con el detalle directo para la cocina de 0600Boston.
+              El detalle de tu pedido y el importe fueron enviados a la cocina de 0600Boston.<br />
+              Cerrando pedido y regresando a la portada...
             </p>
 
-            <a
-              href={urlWhatsApp}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => vaciarCarrito()}
-              className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all"
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-2xl font-black text-xs text-white bg-gradient-to-r from-red-600 to-rose-600 shadow-lg shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all cursor-pointer"
             >
-              <span>Abrir WhatsApp Ahora</span>
-              <span className="text-base">💬</span>
-            </a>
-
-            <div className="mt-4">
-              <Link
-                href="/"
-                className="text-xs font-bold text-[#4b6b55] hover:text-[#14532d]"
-              >
-                Volver al inicio
-              </Link>
-            </div>
+              <span>🚪 Volver al Inicio Ahora</span>
+            </button>
           </div>
         )}
       </div>

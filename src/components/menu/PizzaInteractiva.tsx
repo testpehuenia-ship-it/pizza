@@ -189,9 +189,9 @@ export function PizzaInteractiva({
             ))}
           </div>
 
-          {/* Trébol de 4 Hojas Verde de la marca 0600Boston en el centro */}
+          {/* Trébol de 4 Hojas Verde de la marca 0600Boston */}
           <div className="absolute top-2 right-2 bg-emerald-900/30 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-extrabold text-white border border-emerald-400/30 pointer-events-none shadow-md">
-            ☘️ 0600
+            🍀 0600
           </div>
         </div>
       </div>

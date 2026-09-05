@@ -92,7 +92,7 @@ export default function MenuPage() {
           localStorage.setItem("pwa_notif_accepted", "true");
           setNotifStatusMsg("🎉 ¡Notificaciones activadas con éxito!");
           setTimeout(() => setNotifStatusMsg(""), 3500);
-          new Notification("0600Boston 🍕☘️", {
+          new Notification("0600Boston 🍕🍀", {
             body: "¡Notificaciones activadas! Te avisaremos de nuestras mejores ofertas.",
             icon: "/images/brunoagradece.webp",
           });
@@ -119,7 +119,7 @@ export default function MenuPage() {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 px-4 py-3 shadow-sm">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-1.5">
-            <span className="text-xl">☘️</span>
+            <span className="text-xl">🍀</span>
             <span className="font-black text-lg text-[#14532d] tracking-tight">
               0600<span className="text-[#15803d]">Boston</span>
             </span>
@@ -152,6 +152,16 @@ export default function MenuPage() {
               <span>🛒</span>
               <span>{totalItems}</span>
               <span className="hidden sm:inline font-mono">(${total.toLocaleString("es-AR")})</span>
+            </Link>
+
+            {/* Botón Salir Destacado */}
+            <Link
+              href="/"
+              title="Salir y volver al inicio"
+              className="text-xs font-black text-white bg-gradient-to-r from-red-600 to-rose-600 px-2.5 py-1.5 rounded-xl shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1"
+            >
+              <span>🚪</span>
+              <span className="hidden sm:inline">Salir</span>
             </Link>
           </div>
         </div>

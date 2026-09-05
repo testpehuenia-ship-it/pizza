@@ -111,7 +111,7 @@ export default function HomePage() {
       {/* Header Superior Translúcido */}
       <header className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between pt-2">
         <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-500/40">
-          <span className="text-base">☘️</span>
+          <span className="text-base">🍀</span>
           <span className="text-xs font-black text-white tracking-wide uppercase">
             0600 Boston
           </span>
@@ -120,9 +120,10 @@ export default function HomePage() {
         {cliente && modo === "inicio" && (
           <button
             onClick={() => cerrarSesion()}
-            className="text-[11px] font-bold text-white/90 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 hover:bg-red-500/30 transition-all"
+            className="text-xs font-black text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-500 px-4 py-1.5 rounded-full border border-red-300/40 shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
           >
-            Salir ({cliente.usuario})
+            <span>🚪</span>
+            <span>Salir</span>
           </button>
         )}
       </header>
@@ -134,7 +135,7 @@ export default function HomePage() {
         {cliente && modo === "inicio" && (
           <div className="bg-black/15 backdrop-blur-md border border-emerald-400/50 rounded-3xl p-6 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25),0_12px_40px_rgba(0,0,0,0.5)] text-center fade-in-up">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/30 backdrop-blur-sm border border-emerald-400/60 text-emerald-300 text-xs font-bold mb-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
-              <span>☘️</span>
+              <span>🍀</span>
               <span>Cliente Identificado</span>
             </div>
 
@@ -214,7 +215,7 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-3 border-b border-emerald-500/30 pb-2">
               <div>
                 <h2 className="text-lg font-black text-white flex items-center gap-1.5">
-                  <span>☘️</span>
+                  <span>🍀</span>
                   <span>Crear Cuenta de Cliente</span>
                 </h2>
                 <p className="text-[11px] text-emerald-200/80">

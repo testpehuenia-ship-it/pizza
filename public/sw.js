@@ -23,7 +23,7 @@ self.addEventListener("fetch", (event) => {
 // Evento Push recibido desde el servidor
 self.addEventListener("push", (event) => {
   let data = {
-    title: "0600Boston 🍕☘️",
+    title: "0600Boston 🍕🍀",
     body: "¡Tenés una nueva oferta disponible en 0600Boston!",
     icon: "/images/brunoagradece.webp",
     url: "/menu",

@@ -31,10 +31,10 @@ const DEFAULT_PUSH_DATA: PushDataStore = {
   historial: [
     {
       id: "push_1",
-      titulo: "¡Bienvenido a 0600Boston! 🍕☘️",
+      titulo: "¡Bienvenido a 0600Boston! 🍕🍀",
       mensaje: "Gracias por sumarte. Mirá las pizzas artesanales y combos que tenemos para vos hoy.",
       url: "/menu",
-      icono: "☘️",
+      icono: "🍀",
       fecha: new Date(Date.now() - 86400000).toISOString(),
       destinatarios: "Nuevos Clientes",
       estado: "enviada",

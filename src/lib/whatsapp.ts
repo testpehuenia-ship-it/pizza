@@ -43,14 +43,15 @@ export function generarMensajeWhatsApp(
   msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
   msg += `📋 *DETALLE DEL PEDIDO:*\n\n`;
 
-  if (pizzas.length > 0) {
+  if (pizzas && pizzas.length > 0) {
     msg += `*🍕 PIZZAS:*\n`;
     pizzas.forEach((item, idx) => {
-      msg += `${idx + 1}. *${item.pizza.nombre}* (${item.tamaño} porciones)\n`;
+      const pPrecio = Number(item.precio) || 0;
+      msg += `${idx + 1}. *${item.pizza?.nombre || "Pizza"}* (${item.tamaño || "8"} porciones)\n`;
       if (item.aderezos && item.aderezos.length > 0) {
-        msg += `   └ Aderezos: ${item.aderezos.join(", ")}\n`;
+        msg += `   └ Ingredientes/Aderezos: ${item.aderezos.join(", ")}\n`;
       }
-      msg += `   └ Subtotal: $${item.precio.toLocaleString("es-AR")}\n`;
+      msg += `   └ Subtotal: $${pPrecio.toLocaleString("es-AR")}\n`;
     });
     msg += `\n`;
   }
@@ -58,9 +59,13 @@ export function generarMensajeWhatsApp(
   if (combos && combos.length > 0) {
     msg += `*🎁 COMBOS ESPECIALES:*\n`;
     combos.forEach((item, idx) => {
-      const subtotal = item.precioUnitario * item.cantidad;
-      msg += `${idx + 1}. ${item.cantidad}x *${item.combo.nombre}* - $${subtotal.toLocaleString("es-AR")}\n`;
-      msg += `   └ Incluye: ${item.combo.pizzaNombre} (${item.combo.pizzaTamano}p) + ${item.combo.bebidaNombre}\n`;
+      const cant = Number(item.cantidad) || 1;
+      const precioUnit = Number(item.precioUnitario || item.combo?.precio) || 0;
+      const subtotal = precioUnit * cant;
+      msg += `${idx + 1}. ${cant}x *${item.combo?.nombre || "Combo"}* - $${subtotal.toLocaleString("es-AR")}\n`;
+      if (item.combo?.pizzaNombre && item.combo?.bebidaNombre) {
+        msg += `   └ Incluye: ${item.combo.pizzaNombre} (${item.combo.pizzaTamano || 8}p) + ${item.combo.bebidaNombre}\n`;
+      }
       if (item.aderezosPersonalizados && item.aderezosPersonalizados.length > 0) {
         msg += `   └ Aderezos: ${item.aderezosPersonalizados.join(", ")}\n`;
       }
@@ -68,18 +73,21 @@ export function generarMensajeWhatsApp(
     msg += `\n`;
   }
 
-  if (bebidas.length > 0) {
+  if (bebidas && bebidas.length > 0) {
     msg += `*🥤 BEBIDAS:*\n`;
     bebidas.forEach((item) => {
-      const subtotal = item.precioUnitario * item.cantidad;
-      msg += `• ${item.cantidad}x *${item.bebida.nombre}* - $${subtotal.toLocaleString("es-AR")}\n`;
+      const cant = Number(item.cantidad) || 1;
+      const precioUnit = Number(item.precioUnitario || item.bebida?.precio) || 0;
+      const subtotal = precioUnit * cant;
+      msg += `• ${cant}x *${item.bebida?.nombre || "Bebida"}* - $${subtotal.toLocaleString("es-AR")}\n`;
     });
     msg += `\n`;
   }
 
+  const numTotal = Number(total) || 0;
   msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `💰 *TOTAL A PAGAR:* $${total.toLocaleString("es-AR")}\n\n`;
-  msg += `_¡Muchas gracias por elegir Pizzería 0600Boston! Aguardo confirmación de demora estimada._`;
+  msg += `💰 *TOTAL A PAGAR:* $${numTotal.toLocaleString("es-AR")}\n\n`;
+  msg += `_Aguardo confirmación de demora estimada._`;
 
   return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(msg)}`;
 }

@@ -76,9 +76,15 @@ export const useTiendaStore = create<EstadoTienda>()(
       setDomicilioEntrega: (domicilioEntrega) => set({ domicilioEntrega }),
 
       agregarPizza: (pizza, tamaño, aderezos) => {
-        const precio = tamaño === "4" ? pizza.precio4 : pizza.precio8;
+        const precio =
+          tamaño === "4"
+            ? (pizza.precio4 ?? (pizza as any).precios?.porcion4 ?? 0)
+            : (pizza.precio8 ?? (pizza as any).precios?.porcion8 ?? 0);
         set((state) => ({
-          pizzas: [...state.pizzas, { pizza, tamaño, aderezos, precio }],
+          pizzas: [
+            ...state.pizzas,
+            { pizza, tamaño, aderezos, precio: Number(precio) || 0 },
+          ],
         }));
       },
 
@@ -159,13 +165,20 @@ export const useTiendaStore = create<EstadoTienda>()(
 
       calcularTotal: () => {
         const state = get();
-        const totalPizzas = state.pizzas.reduce((acc, p) => acc + p.precio, 0);
-        const totalBebidas = state.bebidas.reduce(
-          (acc, b) => acc + b.precioUnitario * b.cantidad,
+        const totalPizzas = (state.pizzas || []).reduce(
+          (acc, p) => acc + (Number(p.precio) || 0),
+          0
+        );
+        const totalBebidas = (state.bebidas || []).reduce(
+          (acc, b) =>
+            acc + (Number(b.precioUnitario) || 0) * (Number(b.cantidad) || 1),
           0
         );
         const totalCombos = (state.combos || []).reduce(
-          (acc, c) => acc + c.precioUnitario * c.cantidad,
+          (acc, c) =>
+            acc +
+            (Number(c.precioUnitario || c.combo?.precio) || 0) *
+              (Number(c.cantidad) || 1),
           0
         );
         return totalPizzas + totalBebidas + totalCombos;

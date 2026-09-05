@@ -6,11 +6,14 @@ import { AnimacionCaja } from "./AnimacionCaja";
 import Link from "next/link";
 
 export function ResumenCarrito() {
-  const { pizzas, bebidas, quitarPizza, quitarBebida, calcularTotal } = useTiendaStore();
+  const { pizzas, bebidas, combos = [], quitarPizza, quitarBebida, quitarCombo, calcularTotal } = useTiendaStore();
   const [mostrarModal, setMostrarModal] = useState(false);
   const total = calcularTotal();
 
-  const totalItems = pizzas.length + bebidas.reduce((acc, b) => acc + b.cantidad, 0);
+  const totalItems =
+    pizzas.length +
+    bebidas.reduce((acc, b) => acc + b.cantidad, 0) +
+    combos.reduce((acc, c) => acc + c.cantidad, 0);
 
   if (totalItems === 0) {
     return (
@@ -112,6 +115,43 @@ export function ResumenCarrito() {
                   <button
                     type="button"
                     onClick={() => quitarBebida(item.bebida.id)}
+                    className="text-[11px] text-rose-500 hover:text-rose-700 font-bold bg-rose-50 px-2 py-1 rounded-lg"
+                  >
+                    -1
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Lista de Combos */}
+        {combos.length > 0 && (
+          <div className="space-y-2.5 mb-4">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#4b6b55]">
+              Combos Especiales:
+            </h4>
+            {combos.map((item) => (
+              <div
+                key={item.combo.id}
+                className="flex items-center justify-between p-3 rounded-2xl bg-[#f8fafc] border border-emerald-100"
+              >
+                <div className="flex-1 pr-3">
+                  <span className="font-extrabold text-[#14532d] text-xs block">
+                    🎁 {item.cantidad}x {item.combo.nombre}
+                  </span>
+                  <p className="text-[10px] text-[#4b6b55] mt-0.5">
+                    {item.combo.pizzaNombre} + {item.combo.bebidaNombre}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="font-mono font-black text-xs text-[#14532d]">
+                    ${(item.precioUnitario * item.cantidad).toLocaleString("es-AR")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => quitarCombo(item.combo.id)}
                     className="text-[11px] text-rose-500 hover:text-rose-700 font-bold bg-rose-50 px-2 py-1 rounded-lg"
                   >
                     -1

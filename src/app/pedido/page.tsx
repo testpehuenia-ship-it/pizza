@@ -10,6 +10,7 @@ export default function PedidoPage() {
     cliente,
     pizzas,
     bebidas,
+    combos = [],
     tipoEntrega,
     domicilioEntrega,
     setTipoEntrega,
@@ -115,10 +116,11 @@ export default function PedidoPage() {
     tipoEntrega,
     domicilio,
     total,
-    modoDireccion === "gps" && gpsData ? { ...gpsData, nota: notaEntrega } : null
+    modoDireccion === "gps" && gpsData ? { ...gpsData, nota: notaEntrega } : null,
+    combos
   );
 
-  if (pizzas.length === 0 && bebidas.length === 0 && !confirmado) {
+  if (pizzas.length === 0 && bebidas.length === 0 && combos.length === 0 && !confirmado) {
     return (
       <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
         <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-8 text-center shadow-sm fade-in-up">

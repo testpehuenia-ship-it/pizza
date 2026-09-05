@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BEBIDAS_DATA, BebidaDataType } from "@/lib/data";
 import { useTiendaStore } from "@/lib/store";
@@ -13,6 +13,7 @@ export default function BebidasPage() {
     cliente,
     pizzas,
     bebidas,
+    combos = [],
     tipoEntrega,
     domicilioEntrega,
     agregarBebida,
@@ -21,15 +22,27 @@ export default function BebidasPage() {
     vaciarCarrito,
   } = useTiendaStore();
 
+  const [listaBebidas, setListaBebidas] = useState<BebidaDataType[]>(BEBIDAS_DATA);
   const [filtro, setFiltro] = useState<"todas" | "gaseosa" | "cerveza" | "agua">("todas");
   const total = calcularTotal();
+
+  useEffect(() => {
+    fetch("/api/catalog")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && data.catalog?.bebidas && data.catalog.bebidas.length > 0) {
+          setListaBebidas(data.catalog.bebidas);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const cantidadesMap = bebidas.reduce((acc, b) => {
     acc[b.bebida.id] = b.cantidad;
     return acc;
   }, {} as Record<string, number>);
 
-  const bebidasFiltradas = BEBIDAS_DATA.filter((b) => {
+  const bebidasFiltradas = listaBebidas.filter((b) => {
     if (filtro === "todas") return true;
     return b.categoria === filtro;
   });
@@ -120,8 +133,16 @@ export default function BebidasPage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-2xl shadow-inner">
-                    {b.imagenUrl}
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-2xl shadow-inner overflow-hidden flex-shrink-0">
+                    {b.imagenUrl && (b.imagenUrl.startsWith("/") || b.imagenUrl.startsWith("http")) ? (
+                      <img
+                        src={b.imagenUrl}
+                        alt={b.nombre}
+                        className="w-full h-full object-contain p-1"
+                      />
+                    ) : (
+                      <span>{b.imagenUrl || "🥤"}</span>
+                    )}
                   </div>
                   <div>
                     <h3 className="text-sm font-extrabold text-[#14532d] leading-tight">

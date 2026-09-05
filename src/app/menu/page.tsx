@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTiendaStore } from "@/lib/store";
 import { PIZZAS_DATA, PizzaDataType } from "@/lib/data";
+import { ComboDataType } from "@/lib/catalog-db";
 import { CarruselPizzas3D } from "@/components/menu/CarruselPizzas3D";
 import { AnimacionCaja } from "@/components/carrito/AnimacionCaja";
 import Link from "next/link";
@@ -14,12 +15,43 @@ export default function MenuPage() {
     cliente,
     pizzas,
     bebidas,
+    combos = [],
     agregarPizza,
+    agregarCombo,
     calcularTotal,
   } = useTiendaStore();
 
+  const [seccion, setSeccion] = useState<"pizzas" | "combos">("pizzas");
+  const [listaPizzas, setListaPizzas] = useState<PizzaDataType[]>(PIZZAS_DATA);
+  const [listaCombos, setListaCombos] = useState<ComboDataType[]>([]);
+  const [cargandoCatalogo, setCargandoCatalogo] = useState(false);
+
   const [mostrarModalCaja, setMostrarModalCaja] = useState(false);
-  const [ultimaPizzaAgregada, setUltimaPizzaAgregada] = useState<string>("");
+  const [ultimoItemAgregado, setUltimoItemAgregado] = useState<string>("");
+
+  // Cargar catálogo actualizado desde el servidor
+  useEffect(() => {
+    const fetchCatalogo = async () => {
+      try {
+        setCargandoCatalogo(true);
+        const res = await fetch("/api/catalog");
+        const data = await res.json();
+        if (data.success && data.catalog) {
+          if (data.catalog.pizzas && data.catalog.pizzas.length > 0) {
+            setListaPizzas(data.catalog.pizzas);
+          }
+          if (data.catalog.combos && data.catalog.combos.length > 0) {
+            setListaCombos(data.catalog.combos);
+          }
+        }
+      } catch (err) {
+        console.warn("Fallo carga dinámica de catálogo, usando datos precargados:", err);
+      } finally {
+        setCargandoCatalogo(false);
+      }
+    };
+    fetchCatalogo();
+  }, []);
 
   const handleAgregarPizza = (
     pizza: PizzaDataType,
@@ -27,18 +59,26 @@ export default function MenuPage() {
     ingredientes: string[]
   ) => {
     agregarPizza(pizza, tamaño, ingredientes);
-    setUltimaPizzaAgregada(`${pizza.nombre} (${tamaño}p)`);
+    setUltimoItemAgregado(`${pizza.nombre} (${tamaño}p)`);
+    setMostrarModalCaja(true);
+  };
+
+  const handleAgregarCombo = (combo: ComboDataType) => {
+    agregarCombo(combo, combo.aderezosIncluidos);
+    setUltimoItemAgregado(combo.nombre);
     setMostrarModalCaja(true);
   };
 
   const total = calcularTotal();
-  const totalItems = pizzas.length + bebidas.reduce((acc, b) => acc + b.cantidad, 0);
+  const totalItems =
+    pizzas.length +
+    bebidas.reduce((acc, b) => acc + b.cantidad, 0) +
+    (combos || []).reduce((acc, c) => acc + c.cantidad, 0);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#14532d] pb-24 select-none">
-      
+    <div className="min-h-screen bg-[#f8fafc] text-[#14532d] pb-28 select-none">
       {/* Barra Superior Mobile */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-emerald-100 px-4 py-3 shadow-sm">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 px-4 py-3 shadow-sm">
         <div className="max-w-md mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-1.5">
             <span className="text-xl">☘️</span>
@@ -70,13 +110,162 @@ export default function MenuPage() {
       </header>
 
       {/* Main Container Mobile */}
-      <main className="max-w-md mx-auto px-4 pt-4">
-        
-        {/* Carrusel Táctil de Pizzas con Ensamble Interactivo */}
-        <CarruselPizzas3D
-          pizzas={PIZZAS_DATA}
-          onAgregarAlCarrito={handleAgregarPizza}
-        />
+      <main className="max-w-md mx-auto px-4 pt-3">
+        {/* Selector de Sección: Pizzas vs Combos */}
+        <div className="flex bg-emerald-100/70 p-1 rounded-2xl mb-4">
+          <button
+            type="button"
+            onClick={() => setSeccion("pizzas")}
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+              seccion === "pizzas"
+                ? "bg-white text-[#14532d] shadow-sm"
+                : "text-[#4b6b55] hover:text-[#14532d]"
+            }`}
+          >
+            <span>🍕</span>
+            <span>Pizzas ({listaPizzas.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSeccion("combos")}
+            className={`flex-1 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 ${
+              seccion === "combos"
+                ? "bg-white text-[#14532d] shadow-sm"
+                : "text-[#4b6b55] hover:text-[#14532d]"
+            }`}
+          >
+            <span>🎁</span>
+            <span>Combos {listaCombos.length > 0 ? `(${listaCombos.length})` : "✨"}</span>
+          </button>
+        </div>
+
+        {/* VISTA 1: CARRUSEL 3D DE PIZZAS */}
+        {seccion === "pizzas" && (
+          <CarruselPizzas3D
+            pizzas={listaPizzas}
+            onAgregarAlCarrito={handleAgregarPizza}
+          />
+        )}
+
+        {/* VISTA 2: LISTA VISUAL DE COMBOS PROMOCIONALES */}
+        {seccion === "combos" && (
+          <div className="space-y-4">
+            <div className="text-center mb-2">
+              <span className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                🎁 Promos Especiales
+              </span>
+              <h2 className="text-2xl font-black text-[#14532d] mt-1 tracking-tight">
+                Combos 0600Boston
+              </h2>
+              <p className="text-xs text-[#4b6b55] mt-0.5">
+                Elegí tu combo favorito con pizza y bebida incluida al mejor precio
+              </p>
+            </div>
+
+            {listaCombos.length === 0 ? (
+              <div className="bg-white border border-emerald-100 rounded-3xl p-6 text-center text-slate-500">
+                <span className="text-3xl block mb-2">🎁</span>
+                <p className="text-sm font-bold">Pronto nuevos combos disponibles</p>
+                <p className="text-xs mt-1">
+                  Podés armar tu pedido eligiendo una pizza y una bebida en la carta.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                {listaCombos.map((combo) => (
+                  <div
+                    key={combo.id}
+                    className="bg-white border-2 border-emerald-100 hover:border-emerald-300 rounded-3xl p-4 shadow-sm transition-all"
+                  >
+                    {/* Visual Lado a Lado de la Pizza + Bebida */}
+                    <div className="bg-emerald-50/60 rounded-2xl p-3 flex items-center justify-center gap-4 mb-3">
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shadow-sm overflow-hidden">
+                          {combo.pizzaImagen &&
+                          (combo.pizzaImagen.startsWith("/") || combo.pizzaImagen.startsWith("http")) ? (
+                            <img
+                              src={combo.pizzaImagen}
+                              alt={combo.pizzaNombre}
+                              className="w-full h-full object-contain p-1"
+                            />
+                          ) : (
+                            <span className="text-3xl">{combo.pizzaImagen || "🍕"}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold text-[#14532d] mt-1 max-w-[90px] truncate text-center">
+                          {combo.pizzaNombre} ({combo.pizzaTamano}p)
+                        </span>
+                      </div>
+
+                      <span className="text-xl font-black text-[#15803d]">+</span>
+
+                      <div className="flex flex-col items-center">
+                        <div className="w-16 h-16 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shadow-sm overflow-hidden">
+                          {combo.bebidaImagen &&
+                          (combo.bebidaImagen.startsWith("/") || combo.bebidaImagen.startsWith("http")) ? (
+                            <img
+                              src={combo.bebidaImagen}
+                              alt={combo.bebidaNombre}
+                              className="w-full h-full object-contain p-1"
+                            />
+                          ) : (
+                            <span className="text-3xl">{combo.bebidaImagen || "🥤"}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-bold text-[#14532d] mt-1 max-w-[90px] truncate text-center">
+                          {combo.bebidaNombre}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-extrabold text-[#14532d] text-base leading-tight">
+                          {combo.nombre}
+                        </h3>
+                        <span className="text-base font-black text-[#15803d] font-mono">
+                          ${combo.precio.toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                      {combo.descripcion && (
+                        <p className="text-xs text-[#4b6b55] mt-1 leading-relaxed">
+                          {combo.descripcion}
+                        </p>
+                      )}
+
+                      {combo.aderezosIncluidos && combo.aderezosIncluidos.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <span className="text-[10px] text-[#4b6b55] font-bold mr-1">
+                            Incluye:
+                          </span>
+                          {combo.aderezosIncluidos.map((a, i) => (
+                            <span
+                              key={i}
+                              className="text-[10px] bg-emerald-100/60 text-[#14532d] font-semibold px-2 py-0.5 rounded-md"
+                            >
+                              {a}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3.5 pt-3 border-t border-emerald-100 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleAgregarCombo(combo)}
+                        className="w-full py-2.5 rounded-xl bg-[#15803d] hover:bg-[#16a34a] text-white font-black text-xs shadow-md shadow-emerald-700/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>🛒</span>
+                        <span>Agregar Combo al Carrito</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Banner Inferior: Ir a Bebidas o Finalizar */}
         {totalItems > 0 && (
@@ -111,7 +300,7 @@ export default function MenuPage() {
       {/* Modal de Empaque y Consulta por Bebidas */}
       {mostrarModalCaja && (
         <AnimacionCaja
-          pizzaNombre={ultimaPizzaAgregada}
+          pizzaNombre={ultimoItemAgregado}
           onCerrar={() => setMostrarModalCaja(false)}
         />
       )}

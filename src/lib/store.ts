@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { PizzaDataType, BebidaDataType, AderezoDataType } from "./data";
+import { ComboDataType } from "./catalog-db";
 
 export interface ItemCarritoPizza {
   pizza: PizzaDataType;
@@ -13,6 +14,13 @@ export interface ItemCarritoBebida {
   bebida: BebidaDataType;
   cantidad: number;
   precioUnitario: number;
+}
+
+export interface ItemCarritoCombo {
+  combo: ComboDataType;
+  cantidad: number;
+  precioUnitario: number;
+  aderezosPersonalizados?: string[];
 }
 
 export interface Cliente {
@@ -30,6 +38,7 @@ interface EstadoTienda {
   cliente: Cliente | null;
   pizzas: ItemCarritoPizza[];
   bebidas: ItemCarritoBebida[];
+  combos: ItemCarritoCombo[];
   tipoEntrega: "delivery" | "retiro";
   domicilioEntrega: string;
   
@@ -42,6 +51,8 @@ interface EstadoTienda {
   quitarPizza: (indice: number) => void;
   agregarBebida: (bebida: BebidaDataType) => void;
   quitarBebida: (bebidaId: string) => void;
+  agregarCombo: (combo: ComboDataType, aderezos?: string[]) => void;
+  quitarCombo: (comboId: string) => void;
   vaciarCarrito: () => void;
   calcularTotal: () => number;
 }
@@ -52,6 +63,7 @@ export const useTiendaStore = create<EstadoTienda>()(
       cliente: null,
       pizzas: [],
       bebidas: [],
+      combos: [],
       tipoEntrega: "delivery",
       domicilioEntrega: "",
 
@@ -107,7 +119,43 @@ export const useTiendaStore = create<EstadoTienda>()(
         }));
       },
 
-      vaciarCarrito: () => set({ pizzas: [], bebidas: [] }),
+      agregarCombo: (combo, aderezosPersonalizados = []) => {
+        set((state) => {
+          const existe = state.combos.find((c) => c.combo.id === combo.id);
+          if (existe) {
+            return {
+              combos: state.combos.map((c) =>
+                c.combo.id === combo.id
+                  ? { ...c, cantidad: c.cantidad + 1 }
+                  : c
+              ),
+            };
+          }
+          return {
+            combos: [
+              ...state.combos,
+              {
+                combo,
+                cantidad: 1,
+                precioUnitario: combo.precio,
+                aderezosPersonalizados,
+              },
+            ],
+          };
+        });
+      },
+
+      quitarCombo: (comboId) => {
+        set((state) => ({
+          combos: state.combos
+            .map((c) =>
+              c.combo.id === comboId ? { ...c, cantidad: c.cantidad - 1 } : c
+            )
+            .filter((c) => c.cantidad > 0),
+        }));
+      },
+
+      vaciarCarrito: () => set({ pizzas: [], bebidas: [], combos: [] }),
 
       calcularTotal: () => {
         const state = get();
@@ -116,7 +164,11 @@ export const useTiendaStore = create<EstadoTienda>()(
           (acc, b) => acc + b.precioUnitario * b.cantidad,
           0
         );
-        return totalPizzas + totalBebidas;
+        const totalCombos = (state.combos || []).reduce(
+          (acc, c) => acc + c.precioUnitario * c.cantidad,
+          0
+        );
+        return totalPizzas + totalBebidas + totalCombos;
       },
     }),
     {

@@ -1,5 +1,5 @@
 import { WHATSAPP_NUMERO } from "./data";
-import { ItemCarritoPizza, ItemCarritoBebida, Cliente } from "./store";
+import { ItemCarritoPizza, ItemCarritoBebida, ItemCarritoCombo, Cliente } from "./store";
 
 export function generarMensajeWhatsApp(
   cliente: Cliente | null,
@@ -13,7 +13,8 @@ export function generarMensajeWhatsApp(
     lng: number;
     calleAprox?: string;
     nota?: string;
-  } | null
+  } | null,
+  combos?: ItemCarritoCombo[]
 ): string {
   let msg = `🍕 *PEDIDO - 0600BOSTON*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -50,6 +51,19 @@ export function generarMensajeWhatsApp(
         msg += `   └ Aderezos: ${item.aderezos.join(", ")}\n`;
       }
       msg += `   └ Subtotal: $${item.precio.toLocaleString("es-AR")}\n`;
+    });
+    msg += `\n`;
+  }
+
+  if (combos && combos.length > 0) {
+    msg += `*🎁 COMBOS ESPECIALES:*\n`;
+    combos.forEach((item, idx) => {
+      const subtotal = item.precioUnitario * item.cantidad;
+      msg += `${idx + 1}. ${item.cantidad}x *${item.combo.nombre}* - $${subtotal.toLocaleString("es-AR")}\n`;
+      msg += `   └ Incluye: ${item.combo.pizzaNombre} (${item.combo.pizzaTamano}p) + ${item.combo.bebidaNombre}\n`;
+      if (item.aderezosPersonalizados && item.aderezosPersonalizados.length > 0) {
+        msg += `   └ Aderezos: ${item.aderezosPersonalizados.join(", ")}\n`;
+      }
     });
     msg += `\n`;
   }

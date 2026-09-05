@@ -109,3 +109,64 @@ body {
 .animate-pulse-subtle {
   animation: pulseSubtle 2s infinite ease-in-out;
 }
+
+/* Transiciones de salida y entrada del carrusel de pizzas 0600Boston */
+@keyframes pizzaExitLeft {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-125%) scale(0.8) rotate(-15deg);
+  }
+}
+
+@keyframes pizzaEnterRight {
+  0% {
+    opacity: 0;
+    transform: translateX(125%) scale(0.8) rotate(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes pizzaExitRight {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(125%) scale(0.8) rotate(15deg);
+  }
+}
+
+@keyframes pizzaEnterLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-125%) scale(0.8) rotate(-15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+.animate-pizza-exit-left {
+  animation: pizzaExitLeft 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-pizza-enter-right {
+  animation: pizzaEnterRight 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-pizza-exit-right {
+  animation: pizzaExitRight 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.animate-pizza-enter-left {
+  animation: pizzaEnterLeft 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

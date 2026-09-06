@@ -52,6 +52,42 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [subiendoIcono, setSubiendoIcono] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const tituloInputRef = useRef<HTMLInputElement>(null);
+  const mensajeTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertarEmojiEnTitulo = (emoji: string) => {
+    const input = tituloInputRef.current;
+    if (input) {
+      const start = input.selectionStart ?? formTitulo.length;
+      const end = input.selectionEnd ?? formTitulo.length;
+      const nuevo = formTitulo.slice(0, start) + emoji + formTitulo.slice(end);
+      setFormTitulo(nuevo);
+      setTimeout(() => {
+        input.focus();
+        const nuevaPos = start + emoji.length;
+        input.setSelectionRange(nuevaPos, nuevaPos);
+      }, 10);
+    } else {
+      setFormTitulo((prev) => prev + " " + emoji);
+    }
+  };
+
+  const insertarEmojiEnMensaje = (emoji: string) => {
+    const textarea = mensajeTextareaRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart ?? formMensaje.length;
+      const end = textarea.selectionEnd ?? formMensaje.length;
+      const nuevo = formMensaje.slice(0, start) + emoji + formMensaje.slice(end);
+      setFormMensaje(nuevo);
+      setTimeout(() => {
+        textarea.focus();
+        const nuevaPos = start + emoji.length;
+        textarea.setSelectionRange(nuevaPos, nuevaPos);
+      }, 10);
+    } else {
+      setFormMensaje((prev) => prev + " " + emoji);
+    }
+  };
 
   // Formulario de emisión
   const [formTitulo, setFormTitulo] = useState("🔥 ¡Promo Relámpago en 0600Boston! 🍕");
@@ -528,10 +564,32 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
         <form onSubmit={handleEnviarPush} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-bold uppercase text-emerald-400 mb-1">
-                Título del Mensaje
-              </label>
+              <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+                <label className="text-[11px] font-bold uppercase text-emerald-400">
+                  Título del Mensaje
+                </label>
+                <span className="text-[10px] text-slate-400">
+                  Clic para insertar emoji en título:
+                </span>
+              </div>
+
+              {/* Barra de Emojis Rápidos para el Título */}
+              <div className="flex items-center gap-1 mb-2 flex-wrap bg-[#0d141e]/80 p-1.5 rounded-xl border border-white/10">
+                {["🔥", "🍕", "🍀", "🎁", "🛵", "🥤", "⭐", "🎉", "🤤", "🧀", "💥", "⏰", "🏷️", "🤑", "🚨", "✨"].map((em) => (
+                  <button
+                    key={em}
+                    type="button"
+                    onClick={() => insertarEmojiEnTitulo(em)}
+                    className="w-7 h-7 bg-[#151f2e] hover:bg-emerald-500/25 border border-white/10 hover:border-emerald-400/50 rounded-lg text-sm flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm hover:scale-110"
+                    title={`Insertar ${em} en el título`}
+                  >
+                    {em}
+                  </button>
+                ))}
+              </div>
+
               <input
+                ref={tituloInputRef}
                 type="text"
                 required
                 value={formTitulo}
@@ -619,10 +677,32 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase text-emerald-400 mb-1">
-              Cuerpo del Mensaje (Texto que verá el cliente en su pantalla o celular)
-            </label>
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+              <label className="text-[11px] font-bold uppercase text-emerald-400">
+                Cuerpo del Mensaje (Texto que verá el cliente en su pantalla o celular)
+              </label>
+              <span className="text-[10px] text-slate-400">
+                Clic para insertar emoji en mensaje:
+              </span>
+            </div>
+
+            {/* Barra de Emojis Rápidos para el Cuerpo del Mensaje */}
+            <div className="flex items-center gap-1 mb-2 flex-wrap bg-[#0d141e]/80 p-1.5 rounded-xl border border-white/10">
+              {["🍕", "🔥", "🤤", "🧀", "🎁", "🛵", "🥤", "🎉", "⭐", "💥", "⏰", "🏷️", "💸", "🍀", "😋", "📦", "⚡", "❤️", "🍔", "🍟", "🍺", "👋"].map((em) => (
+                <button
+                  key={em}
+                  type="button"
+                  onClick={() => insertarEmojiEnMensaje(em)}
+                  className="w-7 h-7 bg-[#151f2e] hover:bg-emerald-500/25 border border-white/10 hover:border-emerald-400/50 rounded-lg text-sm flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm hover:scale-110"
+                  title={`Insertar ${em} en el mensaje`}
+                >
+                  {em}
+                </button>
+              ))}
+            </div>
+
             <textarea
+              ref={mensajeTextareaRef}
               rows={2}
               required
               value={formMensaje}

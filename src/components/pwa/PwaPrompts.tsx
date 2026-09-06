@@ -6,12 +6,26 @@ import { getVapidPublicKey, urlBase64ToUint8Array } from "@/lib/vapid-keys";
 
 type PromptStep = "none" | "install" | "ios_guide" | "notifications" | "notif_success";
 
-async function suscribirWebPush(reg: ServiceWorkerRegistration, cliente?: any) {
+async function suscribirWebPush(
+  reg: ServiceWorkerRegistration,
+  cliente?: any,
+  forzarRenovacion = false
+) {
   try {
     const vapidKey = getVapidPublicKey();
     if (!vapidKey) return;
 
     let sub = await reg.pushManager.getSubscription();
+
+    // Si se solicita renovación o la suscripción existía con credenciales viejas,
+    // desuscribimos para forzar la emisión de un endpoint fresco por parte de FCM / Apple
+    if (sub && forzarRenovacion) {
+      try {
+        await sub.unsubscribe();
+        sub = null;
+      } catch (e) {}
+    }
+
     if (!sub) {
       const convertedKey = urlBase64ToUint8Array(vapidKey);
       sub = await reg.pushManager.subscribe({
@@ -73,11 +87,10 @@ export default function PwaPrompts() {
       /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIosDevice);
 
-    // Migración y reactivación excepcional para cuentas previas
-    if (localStorage.getItem("webpush_v2_synced") !== "true") {
-      localStorage.removeItem("pwa_notif_accepted");
-      localStorage.removeItem("pwa_notif_dismissed_at");
-      localStorage.setItem("webpush_v2_synced", "true");
+    // Migración y reactivación excepcional para forzar token limpio
+    const needsResync = localStorage.getItem("webpush_v3_active") !== "true";
+    if (needsResync) {
+      localStorage.setItem("webpush_v3_active", "true");
     }
 
     // Estado actual de notificaciones: comprobar permiso real del navegador
@@ -88,7 +101,7 @@ export default function PwaPrompts() {
       setNotifPermission(Notification.permission);
       if (Notification.permission === "granted" && "serviceWorker" in navigator) {
         navigator.serviceWorker.ready.then((reg) => {
-          suscribirWebPush(reg, cliente);
+          suscribirWebPush(reg, cliente, needsResync);
         });
       }
     }
@@ -210,7 +223,18 @@ export default function PwaPrompts() {
 
   // Manejar solicitud de notificaciones
   const handleRequestNotifications = async () => {
+    // Si el usuario está en iPhone / iPad en Safari o Chrome de navegador,
+    // Apple exige agregarlo a pantalla de inicio primero para habilitar la API de Notificaciones
+    if (isIOS && !isStandalone) {
+      setStep("ios_guide");
+      return;
+    }
+
     if (!("Notification" in window)) {
+      if (isIOS) {
+        setStep("ios_guide");
+        return;
+      }
       alert("Tu navegador no soporta notificaciones push.");
       setStep("none");
       return;
@@ -225,16 +249,18 @@ export default function PwaPrompts() {
         localStorage.removeItem("pwa_notif_dismissed_at");
         setStep("notif_success");
 
-        // Notificación de bienvenida
-        new Notification("¡Bienvenido a 0600Boston! 🍕🍀", {
-          body: "¡Genial! Vas a ser el primero en recibir nuestras ofertas relámpago y promociones exclusivas.",
-          icon: "/images/brunoagradece.webp",
-        });
+        // Notificación de bienvenida local
+        try {
+          new Notification("¡Bienvenido a 0600Boston! 🍕🍀", {
+            body: "¡Genial! Vas a ser el primero en recibir nuestras ofertas relámpago y promociones exclusivas.",
+            icon: "/images/brunoagradece.webp",
+          });
+        } catch (e) {}
 
-        // Suscripción real a Web Push con VAPID
+        // Suscripción real a Web Push con VAPID forzando endpoint limpio
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
-            suscribirWebPush(reg, cliente);
+            suscribirWebPush(reg, cliente, true);
           });
         }
 
@@ -498,8 +524,8 @@ export default function PwaPrompts() {
                     onClick={handleRequestNotifications}
                     className="w-full py-3.5 px-5 rounded-xl font-black text-sm text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-600 hover:brightness-110 active:scale-98 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_8px_20px_rgba(16,185,129,0.35)] border border-emerald-400/60 flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
-                    <span>Activar Notificaciones</span>
-                    <span className="text-base">🔔</span>
+                    <span>{isIOS && !isStandalone ? "Ver cómo activar en iPhone" : "Activar Notificaciones"}</span>
+                    <span className="text-base">{isIOS && !isStandalone ? "📲" : "🔔"}</span>
                   </button>
 
                   <button

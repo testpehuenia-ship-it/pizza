@@ -7,6 +7,17 @@ interface PushAdminProps {
   onMostrarNotificacion: (msg: string, tipo?: "exito" | "error") => void;
 }
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [historial, setHistorial] = useState<PushNotificationRecord[]>([]);
   const [plantillas, setPlantillas] = useState<PushTemplateItem[]>([]);
@@ -14,6 +25,7 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [vapidConfigured, setVapidConfigured] = useState<boolean>(true);
   const [cargando, setCargando] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [suscribiendo, setSuscribiendo] = useState(false);
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
   const [subiendoIcono, setSubiendoIcono] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -225,6 +237,105 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
     }
   };
 
+  const handleSuscribirYProbarEsteDispositivo = async () => {
+    if (!("Notification" in window)) {
+      alert("Tu navegador no soporta notificaciones de escritorio.");
+      return;
+    }
+
+    setSuscribiendo(true);
+    try {
+      let perm = Notification.permission;
+      if (perm === "default") {
+        perm = await Notification.requestPermission();
+      }
+
+      if (perm !== "granted") {
+        onMostrarNotificacion(
+          "Permiso de notificaciones denegado. Habilítalas desde el candado en la barra de direcciones.",
+          "error"
+        );
+        return;
+      }
+
+      if (!("serviceWorker" in navigator)) {
+        throw new Error("Service Worker no soportado en este navegador.");
+      }
+
+      let reg = await navigator.serviceWorker.getRegistration("/sw.js");
+      if (!reg) {
+        reg = await navigator.serviceWorker.register("/sw.js");
+      }
+      await navigator.serviceWorker.ready;
+
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) {
+        throw new Error("NEXT_PUBLIC_VAPID_PUBLIC_KEY no encontrada en las variables de entorno.");
+      }
+
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) {
+        const convertedKey = urlBase64ToUint8Array(vapidKey);
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedKey as unknown as BufferSource,
+        });
+      }
+
+      const res = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subscription: sub.toJSON(),
+          userAgent: navigator.userAgent,
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || "No se pudo registrar la suscripción");
+      }
+
+      onMostrarNotificacion(
+        "¡Dispositivo suscrito con éxito! Enviando notificación push real de prueba...",
+        "exito"
+      );
+
+      // Disparar envío push real inmediato para verificar entrega en pantalla
+      const pushRes = await fetch("/api/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          titulo: formTitulo || "🍕 ¡0600Boston Notificaciones Activas!",
+          mensaje: formMensaje || "Tu dispositivo está conectado y recibiendo ofertas push en tiempo real.",
+          url: formUrl || "/menu",
+          icono: formIcono || "🍀",
+          destinatarios: "Todos los Clientes",
+        }),
+      });
+
+      const pushData = await pushRes.json();
+      if (pushRes.ok && pushData.alcanzados > 0) {
+        onMostrarNotificacion(
+          `¡Éxito total! Notificación push enviada y recibida en ${pushData.alcanzados} dispositivo(s).`,
+          "exito"
+        );
+      } else {
+        onMostrarNotificacion(
+          "Dispositivo registrado en la base de datos. Si no ves la ventana emergente, verifica si tienes activo el modo 'No Molestar' de Windows.",
+          "exito"
+        );
+      }
+
+      cargarHistorial();
+    } catch (err: any) {
+      console.error(err);
+      onMostrarNotificacion(`Error: ${err.message}`, "error");
+    } finally {
+      setSuscribiendo(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Banner Superior de Administración de Push */}
@@ -260,27 +371,49 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
 
           <button
             type="button"
+            onClick={handleSuscribirYProbarEsteDispositivo}
+            disabled={suscribiendo}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95"
+          >
+            <span>📲</span>
+            <span>{suscribiendo ? "Conectando..." : "Activar Push en este Navegador"}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleProbarEnEsteDispositivo}
-            className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-[#1e293b] hover:bg-[#334155] text-slate-300 hover:text-white border border-white/10 font-bold text-xs px-3 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+            title="Prueba local directa de navegador"
           >
             <span>🧪</span>
-            <span>Probar en mi pantalla</span>
+            <span>Test Local</span>
           </button>
         </div>
       </div>
 
       {/* Alerta didáctica si aún no hay terminales registradas */}
       {totalSuscripciones === 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-200 shadow-md">
-          <span className="text-2xl">⚠️</span>
-          <div>
-            <h4 className="font-extrabold text-amber-300 uppercase tracking-wider text-[11px]">
-              Aún no hay clientes con notificaciones activadas
-            </h4>
-            <p className="mt-1 text-slate-300 leading-relaxed">
-              El motor de Web Push está 100% activo y configurado. Para recibir mensajes en un celular o PC, abre la tienda en un navegador (o instala la app) y pulsa <strong>"Permitir notificaciones"</strong>. El dispositivo se registrará en este contador y recibirá tus promociones.
-            </p>
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-200 shadow-md">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl shrink-0">⚠️</span>
+            <div>
+              <h4 className="font-extrabold text-amber-300 uppercase tracking-wider text-[11px]">
+                Aún no hay ningún dispositivo suscrito en la base de datos
+              </h4>
+              <p className="mt-0.5 text-slate-300 leading-relaxed">
+                El motor Web Push está activo, pero como no hay dispositivos registrados todavía, las notificaciones emitidas no tienen a quién llegar.
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={handleSuscribirYProbarEsteDispositivo}
+            disabled={suscribiendo}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer active:scale-95"
+          >
+            <span>🔔</span>
+            <span>{suscribiendo ? "Conectando..." : "Suscribir mi Pantalla Ahora"}</span>
+          </button>
         </div>
       )}
 

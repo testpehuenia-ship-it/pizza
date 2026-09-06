@@ -133,42 +133,33 @@ export default function PwaPrompts() {
 
     window.addEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
 
-    // Si el cliente está registrado, evaluar con precaución
-    if (cliente) {
-      const installDismissed = localStorage.getItem("pwa_install_dismissed_at");
-      const notifDismissed = localStorage.getItem("pwa_notif_dismissed_at");
+    const installDismissed = localStorage.getItem("pwa_install_dismissed_at");
+    const notifDismissed = localStorage.getItem("pwa_notif_dismissed_at");
 
-      const timer = setTimeout(() => {
-        if (standaloneMode) {
-          // Si ya la bajó o está instalada: NUNCA mostrar mensaje de descarga
-          setShowFloatingButton(false);
-
-          // Solo preguntar notificaciones si aún NO las aceptó
-          if (!yaTieneNotificaciones && "Notification" in window && Notification.permission === "default" && !notifDismissed) {
-            setStep("notifications");
-          } else {
-            setStep("none");
-          }
+    const timer = setTimeout(() => {
+      if (standaloneMode) {
+        // Si ya está instalada o descargada: solo preguntar notificaciones si aún no se respondieron
+        setShowFloatingButton(false);
+        if (!yaTieneNotificaciones && "Notification" in window && Notification.permission === "default" && !notifDismissed) {
+          setStep("notifications");
         } else {
-          // Si NO está instalada y NO fue descargada
-          if (!installDismissed) {
-            setStep("install");
-          }
+          setStep("none");
         }
-      }, 1500);
-
-      return () => {
-        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-        window.removeEventListener("appinstalled", handleAppInstalled);
-        window.removeEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
-        clearTimeout(timer);
-      };
-    }
+      } else {
+        // En navegador web normal: invitar primero a recibir notificaciones de ofertas
+        if (!yaTieneNotificaciones && "Notification" in window && Notification.permission === "default" && !notifDismissed) {
+          setStep("notifications");
+        } else if (!installDismissed) {
+          setStep("install");
+        }
+      }
+    }, 2000);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
       window.removeEventListener("pwa:trigger-install-prompt", handleExplicitTrigger);
+      clearTimeout(timer);
     };
   }, [cliente]);
 

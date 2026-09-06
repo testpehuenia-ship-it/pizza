@@ -113,17 +113,6 @@ export async function POST(request: Request) {
     if (!vapidConfigured) {
       console.warn("VAPID no está configurado correctamente en el entorno.");
     } else if (suscripciones.length > 0) {
-      const payload = JSON.stringify({
-        title: titulo.trim(),
-        body: mensaje.trim(),
-        icon:
-          icono && (icono.startsWith("http") || icono.startsWith("/"))
-            ? icono
-            : "/images/brunoagradece.webp",
-        badge: "/images/brunoagradece.webp",
-        url: url || "/menu",
-      });
-
       const promesasEnvio = suscripciones.map(async (sub) => {
         // Suscripciones que no cuenten con las claves de cifrado se descartan automáticamente
         if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) {
@@ -132,6 +121,33 @@ export async function POST(request: Request) {
           fallidos++;
           return;
         }
+
+        // Personalización dinámica de {nombre} por cliente
+        let primerNombre = "amigo";
+        if (sub.clienteNombre && sub.clienteNombre.trim()) {
+          primerNombre = sub.clienteNombre.trim().split(" ")[0];
+        }
+
+        const tituloFinal = titulo
+          .replace(/\{nombre\}/gi, primerNombre)
+          .replace(/\[nombre\]/gi, primerNombre)
+          .trim();
+
+        const mensajeFinal = mensaje
+          .replace(/\{nombre\}/gi, primerNombre)
+          .replace(/\[nombre\]/gi, primerNombre)
+          .trim();
+
+        const payloadPersonalizado = JSON.stringify({
+          title: tituloFinal,
+          body: mensajeFinal,
+          icon:
+            icono && (icono.startsWith("http") || icono.startsWith("/"))
+              ? icono
+              : "/images/brunoagradece.webp",
+          badge: "/images/brunoagradece.webp",
+          url: url || "/menu",
+        });
 
         try {
           await webpush.sendNotification(
@@ -142,7 +158,7 @@ export async function POST(request: Request) {
                 auth: sub.keys.auth,
               },
             },
-            payload,
+            payloadPersonalizado,
             {
               TTL: 86400, // 24 horas en cola push si el dispositivo está apagado
               urgency: "high",

@@ -89,9 +89,9 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
     }
   };
 
-  // Formulario de emisión
-  const [formTitulo, setFormTitulo] = useState("🔥 ¡Promo Relámpago en 0600Boston! 🍕");
-  const [formMensaje, setFormMensaje] = useState("Hoy 20% de descuento en tu pizza grande favorita. ¡Pedí ahora por la app!");
+  // Formulario de emisión (precargado con plantilla de bienvenida personalizada)
+  const [formTitulo, setFormTitulo] = useState("¡Bienvenido a 0600Boston, {nombre}! 🍕🍀");
+  const [formMensaje, setFormMensaje] = useState("Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas artesanales y promos con descuento para vos hoy.");
   const [formUrl, setFormUrl] = useState("/menu");
   const [formIcono, setFormIcono] = useState("🍀");
   const [formDestinatarios, setFormDestinatarios] = useState("Todos los Clientes");
@@ -526,11 +526,28 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
         {/* Sección de Plantillas Guardadas */}
         {plantillas && plantillas.length > 0 && (
           <div className="bg-[#0d141e] border border-white/10 rounded-2xl p-3.5 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <span>📑</span>
                 <span>Plantillas Guardadas ({plantillas.length}) - Clic para usar en formulario:</span>
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormTitulo("¡Bienvenido a 0600Boston, {nombre}! 🍕🍀");
+                  setFormMensaje("Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas artesanales y promos con descuento para vos hoy.");
+                  setFormUrl("/menu");
+                  setFormIcono("🍀");
+                  setFormDestinatarios("Todos los Clientes");
+                  formRef.current?.scrollIntoView({ behavior: "smooth" });
+                  onMostrarNotificacion("Notificación de Bienvenida {nombre} cargada en el formulario", "exito");
+                }}
+                className="text-[10px] text-emerald-300 hover:text-white bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 px-2 py-0.5 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1"
+                title="Cargar notificación de bienvenida con {nombre} en el formulario"
+              >
+                <span>✨</span>
+                <span>Cargar Bienvenida &#123;nombre&#125;</span>
+              </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {plantillas.map((tmpl) => (
@@ -569,12 +586,21 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
                   Título del Mensaje
                 </label>
                 <span className="text-[10px] text-slate-400">
-                  Clic para insertar emoji en título:
+                  Clic para insertar emoji o etiqueta:
                 </span>
               </div>
 
-              {/* Barra de Emojis Rápidos para el Título */}
+              {/* Barra de Emojis y Etiquetas Rápidas para el Título */}
               <div className="flex items-center gap-1 mb-2 flex-wrap bg-[#0d141e]/80 p-1.5 rounded-xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={() => insertarEmojiEnTitulo("{nombre}")}
+                  className="h-7 px-2.5 bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 rounded-lg text-xs font-black text-emerald-300 flex items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm hover:scale-105"
+                  title="Insertar etiqueta dinámica {nombre} en el título"
+                >
+                  <span>🏷️</span>
+                  <span>+ &#123;nombre&#125;</span>
+                </button>
                 {["🔥", "🍕", "🍀", "🎁", "🛵", "🥤", "⭐", "🎉", "🤤", "🧀", "💥", "⏰", "🏷️", "🤑", "🚨", "✨"].map((em) => (
                   <button
                     key={em}
@@ -682,12 +708,21 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
                 Cuerpo del Mensaje (Texto que verá el cliente en su pantalla o celular)
               </label>
               <span className="text-[10px] text-slate-400">
-                Clic para insertar emoji en mensaje:
+                Clic para insertar emoji o etiqueta:
               </span>
             </div>
 
-            {/* Barra de Emojis Rápidos para el Cuerpo del Mensaje */}
+            {/* Barra de Emojis y Etiquetas Rápidas para el Cuerpo del Mensaje */}
             <div className="flex items-center gap-1 mb-2 flex-wrap bg-[#0d141e]/80 p-1.5 rounded-xl border border-white/10">
+              <button
+                type="button"
+                onClick={() => insertarEmojiEnMensaje("{nombre}")}
+                className="h-7 px-2.5 bg-emerald-500/20 hover:bg-emerald-500/35 border border-emerald-400/50 rounded-lg text-xs font-black text-emerald-300 flex items-center justify-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm hover:scale-105"
+                title="Insertar etiqueta dinámica {nombre} en el mensaje"
+              >
+                <span>🏷️</span>
+                <span>+ &#123;nombre&#125;</span>
+              </button>
               {["🍕", "🔥", "🤤", "🧀", "🎁", "🛵", "🥤", "🎉", "⭐", "💥", "⏰", "🏷️", "💸", "🍀", "😋", "📦", "⚡", "❤️", "🍔", "🍟", "🍺", "👋"].map((em) => (
                 <button
                   key={em}
@@ -707,9 +742,16 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
               required
               value={formMensaje}
               onChange={(e) => setFormMensaje(e.target.value)}
-              placeholder="Ej: Solo por hoy con tu pedido recibís una bebida gratis. ¡Pedí en 0600Boston!"
+              placeholder="Ej: Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas y combos con descuento para vos hoy."
               className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-400 leading-relaxed"
             />
+
+            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl">
+              <span>💡</span>
+              <span>
+                <strong>Personalización dinámica:</strong> Podés usar la etiqueta <strong className="text-white font-mono">&#123;nombre&#125;</strong> tanto en el título como en el cuerpo del mensaje. Cada cliente recibirá su nombre real (ej: <em>&quot;Juan&quot;</em>), o <em>&quot;amigo&quot;</em> si visita la web sin cuenta.
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -746,29 +788,53 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
           </div>
 
           {/* Vista previa simulada de cómo se ve en el celular */}
-          <div className="bg-[#0d141e] border border-white/10 rounded-2xl p-3.5">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
-              Vista previa en pantalla del cliente:
-            </span>
-            <div className="bg-[#182333] border border-emerald-500/30 rounded-xl p-3 flex items-start gap-3 shadow-md max-w-md">
-              <div className="w-10 h-10 rounded-xl bg-[#0d141e] border border-emerald-400 flex items-center justify-center text-xl shrink-0 overflow-hidden">
-                {formIcono.startsWith("http") || formIcono.startsWith("/") ? (
-                  <img src={formIcono} alt="Icono Preview" className="w-full h-full object-contain p-0.5" />
-                ) : (
-                  <span>{formIcono}</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-emerald-400 font-bold">0600Boston • Ahora</span>
+          {(() => {
+            const tieneNombre =
+              formTitulo.includes("{nombre}") ||
+              formMensaje.includes("{nombre}") ||
+              formTitulo.includes("[nombre]") ||
+              formMensaje.includes("[nombre]");
+            const tituloPreview = formTitulo
+              .replace(/\{nombre\}/gi, "Juan")
+              .replace(/\[nombre\]/gi, "Juan");
+            const mensajePreview = formMensaje
+              .replace(/\{nombre\}/gi, "Juan")
+              .replace(/\[nombre\]/gi, "Juan");
+
+            return (
+              <div className="bg-[#0d141e] border border-white/10 rounded-2xl p-3.5 space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                    Vista previa en pantalla del cliente:
+                  </span>
+                  {tieneNombre && (
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                      <span>🏷️</span>
+                      <span>Simulando etiqueta &#123;nombre&#125; con cliente &quot;Juan&quot;</span>
+                    </span>
+                  )}
                 </div>
-                <h5 className="font-extrabold text-white text-xs truncate mt-0.5">{formTitulo}</h5>
-                <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5 leading-snug">
-                  {formMensaje}
-                </p>
+                <div className="bg-[#182333] border border-emerald-500/30 rounded-xl p-3 flex items-start gap-3 shadow-md max-w-md">
+                  <div className="w-10 h-10 rounded-xl bg-[#0d141e] border border-emerald-400 flex items-center justify-center text-xl shrink-0 overflow-hidden">
+                    {formIcono.startsWith("http") || formIcono.startsWith("/") ? (
+                      <img src={formIcono} alt="Icono Preview" className="w-full h-full object-contain p-0.5" />
+                    ) : (
+                      <span>{formIcono}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-emerald-400 font-bold">0600Boston • Ahora</span>
+                    </div>
+                    <h5 className="font-extrabold text-white text-xs truncate mt-0.5">{tituloPreview}</h5>
+                    <p className="text-[11px] text-slate-300 line-clamp-2 mt-0.5 leading-snug">
+                      {mensajePreview}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           <div className="flex justify-end items-center gap-2.5 pt-2 border-t border-white/10 flex-wrap">
             <button

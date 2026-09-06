@@ -48,6 +48,17 @@ interface PushDataStore {
   plantillas: PushTemplateItem[];
 }
 
+export const PLANTILLA_BIENVENIDA_NOMBRE: PushTemplateItem = {
+  id: "tmpl_bienvenida_personalizada",
+  nombre: "Bienvenida Personalizada {nombre}",
+  titulo: "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+  mensaje: "Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas y promos con descuento para vos hoy.",
+  url: "/menu",
+  icono: "🍀",
+  destinatarios: "Todos los Clientes",
+  fechaCreacion: new Date().toISOString(),
+};
+
 const DEFAULT_PUSH_DATA: PushDataStore = {
   historial: [
     {
@@ -83,6 +94,7 @@ const DEFAULT_PUSH_DATA: PushDataStore = {
   ],
   suscripciones: [],
   plantillas: [
+    PLANTILLA_BIENVENIDA_NOMBRE,
     {
       id: "tmpl_1",
       nombre: "Promo Napolitana 20% OFF",
@@ -155,6 +167,11 @@ export async function getPushData(): Promise<PushDataStore> {
       const res = await db.execute(`SELECT value FROM tienda_push WHERE key = 'main_push' LIMIT 1`);
       if (res.rows.length > 0 && res.rows[0].value) {
         const parsed = JSON.parse(String(res.rows[0].value)) as PushDataStore;
+        if (!parsed.plantillas) parsed.plantillas = [];
+        if (!parsed.plantillas.some((p) => p.id === "tmpl_bienvenida_personalizada")) {
+          parsed.plantillas.unshift(PLANTILLA_BIENVENIDA_NOMBRE);
+          await persistPushData(parsed);
+        }
         memoryPushCache = parsed;
         return parsed;
       }
@@ -164,6 +181,11 @@ export async function getPushData(): Promise<PushDataStore> {
   try {
     const content = await fs.readFile(PUSH_DATA_FILE, "utf-8");
     const parsed = JSON.parse(content) as PushDataStore;
+    if (!parsed.plantillas) parsed.plantillas = [];
+    if (!parsed.plantillas.some((p) => p.id === "tmpl_bienvenida_personalizada")) {
+      parsed.plantillas.unshift(PLANTILLA_BIENVENIDA_NOMBRE);
+      await persistPushData(parsed);
+    }
     memoryPushCache = parsed;
     return parsed;
   } catch {

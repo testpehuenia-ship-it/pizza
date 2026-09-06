@@ -83,10 +83,16 @@ export default function PwaPrompts() {
       /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(isIosDevice);
 
-    // Estado actual de notificaciones: comprobar si ya fueron aceptadas
+    // Migración y reactivación excepcional para cuentas previas
+    if (localStorage.getItem("webpush_v2_synced") !== "true") {
+      localStorage.removeItem("pwa_notif_accepted");
+      localStorage.removeItem("pwa_notif_dismissed_at");
+      localStorage.setItem("webpush_v2_synced", "true");
+    }
+
+    // Estado actual de notificaciones: comprobar permiso real del navegador
     const yaTieneNotificaciones =
-      ("Notification" in window && Notification.permission === "granted") ||
-      localStorage.getItem("pwa_notif_accepted") === "true";
+      "Notification" in window && Notification.permission === "granted";
 
     if ("Notification" in window) {
       setNotifPermission(Notification.permission);
@@ -263,23 +269,26 @@ export default function PwaPrompts() {
 
   return (
     <>
-      {/* Botón Flotante Discreto con fondo biselado translúcido */}
-      {showFloatingButton && !isStandalone && step === "none" && cliente && (
-        <button
-          onClick={() => setStep("install")}
-          className="fixed bottom-4 left-4 z-40 bg-black/30 hover:bg-black/50 backdrop-blur-md text-white border border-emerald-400/60 rounded-full px-3.5 py-2 flex items-center gap-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_8px_20px_rgba(0,0,0,0.5)] hover:scale-105 active:scale-95 transition-all text-xs font-black animate-fade-in cursor-pointer"
-          title="Instalar App 0600Boston"
-        >
-          <div className="w-6 h-6 rounded-full overflow-hidden border border-emerald-400 bg-white shrink-0 shadow-sm">
-            <img
-              src="/images/brunodescarga.webp"
-              alt="Bruno"
-              className="w-full h-full object-cover"
-            />
+      {/* Banner Flotante Excepcional para Clientes con Notificaciones Pendientes */}
+      {cliente && notifPermission !== "granted" && step === "none" && (
+        <div className="fixed bottom-4 right-4 z-40 max-w-sm bg-[#151f2e]/95 backdrop-blur-md border border-emerald-400/60 rounded-2xl p-3 shadow-2xl flex items-center justify-between gap-3 text-white animate-fade-in">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-xl shrink-0">🔔</span>
+            <div className="text-[11px] leading-tight min-w-0">
+              <span className="font-extrabold text-emerald-300 truncate block">
+                ¡Hola {cliente.nombre}!
+              </span>
+              <span className="text-slate-300 text-[10px]">Reactivá tus alertas de ofertas</span>
+            </div>
           </div>
-          <span className="hidden sm:inline">Instalar App</span>
-          <span className="text-emerald-400">📲</span>
-        </button>
+          <button
+            type="button"
+            onClick={() => setStep("notifications")}
+            className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer shadow-md shrink-0 active:scale-95"
+          >
+            Activar
+          </button>
+        </div>
       )}
 
       {/* MODAL / BANNER FLOTANTE CON FONDO BISELADO TRANSPARENTE AL 90% */}
@@ -460,10 +469,12 @@ export default function PwaPrompts() {
                   {/* TEXTO Y TÍTULO */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg sm:text-xl font-black text-white leading-tight drop-shadow-md">
-                      ¡Recibí ofertas y promos exclusivas! 🔔
+                      {cliente ? `¡Hola ${cliente.nombre}! Reactivá tus Notificaciones 🔔` : "¡Recibí ofertas y promos exclusivas! 🔔"}
                     </h3>
                     <p className="text-xs text-emerald-100/90 font-medium mt-1 drop-shadow-sm">
-                      ¡Bruno y el equipo te avisan al instante cuando salgan promociones relámpago y pizzas con descuento!
+                      {cliente
+                        ? "Actualizamos nuestro sistema. Tocá 'Activar Notificaciones' para recibir promos relámpago y avisos de tus pedidos en tu celular."
+                        : "¡Bruno y el equipo te avisan al instante cuando salgan promociones relámpago y pizzas con descuento!"}
                     </p>
                   </div>
                 </div>

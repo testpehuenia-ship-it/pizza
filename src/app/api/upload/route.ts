@@ -15,6 +15,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No se proporcionó ningún archivo" }, { status: 400 });
     }
 
+    // Validación de seguridad: Limitar a tipos MIME de imagen permitidos
+    const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif"];
+    if (!allowedMimeTypes.includes(file.type.toLowerCase())) {
+      return NextResponse.json(
+        { error: "Formato no permitido. Solo se admiten imágenes PNG, JPEG, WebP o AVIF." },
+        { status: 415 }
+      );
+    }
+
+    // Validación de seguridad: Límite máximo de 10 MB por imagen
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "El archivo excede el tamaño máximo permitido (10 MB)." },
+        { status: 413 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
     const rawBuffer = Buffer.from(bytes);
 

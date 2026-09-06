@@ -9,6 +9,7 @@ import { AnimacionCaja } from "@/components/carrito/AnimacionCaja";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { salirYCerrarApp } from "@/lib/cerrar-app";
+import FooterLegal from "@/components/layout/FooterLegal";
 
 export default function MenuPage() {
   const router = useRouter();
@@ -360,6 +361,9 @@ export default function MenuPage() {
           </div>
         )}
       </main>
+
+      {/* Footer Legal con Derechos y Enlace ADNQN.ar */}
+      <FooterLegal theme="light" className="mt-8" />
 
       {/* Modal de Empaque y Consulta por Bebidas */}
       {mostrarModalCaja && (

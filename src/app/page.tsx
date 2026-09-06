@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import BackgroundVideo from "@/components/landing/BackgroundVideo";
 import { useTiendaStore } from "@/lib/store";
 import { salirYCerrarApp } from "@/lib/cerrar-app";
+import FooterLegal from "@/components/layout/FooterLegal";
 
 export default function HomePage() {
   const router = useRouter();
@@ -431,6 +432,9 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Footer Legal con Derechos y Enlace ADNQN.ar */}
+      <FooterLegal theme="dark" className="relative z-10 mt-6" />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { BEBIDAS_DATA, BebidaDataType } from "@/lib/data";
 import { useTiendaStore } from "@/lib/store";
 import { generarMensajeWhatsApp } from "@/lib/whatsapp";
 import Link from "next/link";
+import FooterLegal from "@/components/layout/FooterLegal";
 
 export default function BebidasPage() {
   const router = useRouter();
@@ -196,6 +197,9 @@ export default function BebidasPage() {
           })}
         </div>
       </main>
+
+      {/* Footer Legal con Derechos y Enlace ADNQN.ar */}
+      <FooterLegal theme="light" className="mb-24 mt-8" />
 
       {/* Barra Fija Inferior Mobile: Pedir otro producto o Finalizar Pedido */}
       <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-emerald-100 p-4 shadow-[0_-10px_30px_rgba(20,83,45,0.08)] z-50">

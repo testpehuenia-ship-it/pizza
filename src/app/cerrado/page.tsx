@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import FooterLegal from "@/components/layout/FooterLegal";
 
 export default function CerradoPage() {
   const [intentadoCierre, setIntentadoCierre] = useState(false);
@@ -80,6 +81,10 @@ export default function CerradoPage() {
           >
             🍀 Volver a Abrir la App
           </Link>
+        </div>
+
+        <div className="pt-2 border-t border-white/5">
+          <FooterLegal theme="dark" className="bg-transparent border-0 py-1" />
         </div>
       </div>
     </div>

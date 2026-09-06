@@ -378,17 +378,32 @@ export default function AdminDashboardPage() {
                           </p>
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-                          <span className="text-xs font-mono text-emerald-300 font-bold">
-                            📱 {c.telefono}
-                          </span>
+                        <div className="mt-4 pt-3 border-t border-white/10 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-mono text-emerald-300 font-bold">
+                              📱 {c.telefono}
+                            </span>
+                            <a
+                              href={`https://wa.me/${c.telefono.replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-lg transition-colors font-bold"
+                            >
+                              Chat WhatsApp
+                            </a>
+                          </div>
+
                           <a
-                            href={`https://wa.me/${c.telefono.replace(/[^0-9]/g, "")}`}
+                            href={`https://wa.me/${c.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+                              `¡Hola ${c.nombre}! 🍕 Te escribimos de 0600Boston. Ya podés recibir nuestras promociones relámpago, cupones y novedades directamente en tu celular. Ingresá a la tienda y tocá "Permitir notificaciones": ${typeof window !== "undefined" ? window.location.origin : "https://0600boston.com"}`
+                            )}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[11px] bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-lg transition-colors font-bold"
+                            className="w-full text-[11px] bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-1.5 px-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 font-bold cursor-pointer"
+                            title="Enviar invitación por WhatsApp para activar notificaciones push"
                           >
-                            WhatsApp
+                            <span>🔔</span>
+                            <span>Invitar a Notificaciones Push</span>
                           </a>
                         </div>
                       </div>

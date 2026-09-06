@@ -35,6 +35,9 @@ export interface PushSubscriptionItem {
   keys?: PushSubscriptionKeys;
   created_at: string;
   userAgent?: string;
+  clienteNombre?: string;
+  clienteUsuario?: string;
+  clienteTelefono?: string;
 }
 
 const PUSH_DATA_FILE = path.join(process.cwd(), "src", "data", "push-notifications.json");
@@ -214,7 +217,12 @@ export async function registrarSuscripcionPush(
     endpoint: string;
     keys?: PushSubscriptionKeys;
   },
-  userAgent?: string
+  userAgent?: string,
+  infoCliente?: {
+    nombre?: string;
+    usuario?: string;
+    telefono?: string;
+  }
 ): Promise<boolean> {
   const store = await getPushData();
   if (!store.suscripciones) store.suscripciones = [];
@@ -225,6 +233,9 @@ export async function registrarSuscripcionPush(
       ...store.suscripciones[index],
       keys: sub.keys || store.suscripciones[index].keys,
       userAgent: userAgent || store.suscripciones[index].userAgent,
+      clienteNombre: infoCliente?.nombre || store.suscripciones[index].clienteNombre,
+      clienteUsuario: infoCliente?.usuario || store.suscripciones[index].clienteUsuario,
+      clienteTelefono: infoCliente?.telefono || store.suscripciones[index].clienteTelefono,
       created_at: new Date().toISOString(),
     };
   } else {
@@ -234,6 +245,9 @@ export async function registrarSuscripcionPush(
       keys: sub.keys,
       created_at: new Date().toISOString(),
       userAgent,
+      clienteNombre: infoCliente?.nombre,
+      clienteUsuario: infoCliente?.usuario,
+      clienteTelefono: infoCliente?.telefono,
     });
   }
 

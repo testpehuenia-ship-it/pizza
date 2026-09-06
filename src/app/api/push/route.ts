@@ -30,6 +30,14 @@ export async function GET() {
       historial: (data.historial || []).slice(0, 3),
       plantillas: data.plantillas || [],
       totalSuscripciones: (data.suscripciones || []).length,
+      suscripciones: (data.suscripciones || []).map((s) => ({
+        id: s.id,
+        created_at: s.created_at,
+        userAgent: s.userAgent || "Navegador Web",
+        clienteNombre: s.clienteNombre || null,
+        clienteUsuario: s.clienteUsuario || null,
+        clienteTelefono: s.clienteTelefono || null,
+      })),
       vapidConfigured,
     });
   } catch (error: any) {

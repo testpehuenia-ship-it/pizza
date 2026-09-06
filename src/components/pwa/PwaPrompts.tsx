@@ -16,7 +16,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-async function suscribirWebPush(reg: ServiceWorkerRegistration) {
+async function suscribirWebPush(reg: ServiceWorkerRegistration, cliente?: any) {
   try {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!vapidKey) return;
@@ -37,6 +37,11 @@ async function suscribirWebPush(reg: ServiceWorkerRegistration) {
         body: JSON.stringify({
           subscription: sub.toJSON(),
           userAgent: navigator.userAgent,
+          clienteNombre: cliente
+            ? `${cliente.nombre} ${cliente.apellido || ""}`.trim()
+            : undefined,
+          clienteUsuario: cliente?.usuario,
+          clienteTelefono: cliente?.telefono,
         }),
       });
     }
@@ -87,7 +92,7 @@ export default function PwaPrompts() {
       setNotifPermission(Notification.permission);
       if (Notification.permission === "granted" && "serviceWorker" in navigator) {
         navigator.serviceWorker.ready.then((reg) => {
-          suscribirWebPush(reg);
+          suscribirWebPush(reg, cliente);
         });
       }
     }
@@ -233,7 +238,7 @@ export default function PwaPrompts() {
         // Suscripción real a Web Push con VAPID
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
-            suscribirWebPush(reg);
+            suscribirWebPush(reg, cliente);
           });
         }
 

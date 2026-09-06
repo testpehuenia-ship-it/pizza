@@ -18,10 +18,32 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
+function parseDispositivo(ua?: string): { nombre: string; icono: string } {
+  if (!ua) return { nombre: "Navegador Web", icono: "🌐" };
+  const lower = ua.toLowerCase();
+  if (lower.includes("android")) {
+    return { nombre: "Celular Android", icono: "📱" };
+  }
+  if (lower.includes("iphone") || lower.includes("ipad")) {
+    return { nombre: "Apple iOS (iPhone / iPad)", icono: "🍏" };
+  }
+  if (lower.includes("windows")) {
+    return { nombre: "Computadora Windows (PC)", icono: "💻" };
+  }
+  if (lower.includes("macintosh") || lower.includes("mac os")) {
+    return { nombre: "Computadora Mac", icono: "🖥️" };
+  }
+  if (lower.includes("linux")) {
+    return { nombre: "Computadora Linux", icono: "🐧" };
+  }
+  return { nombre: "Navegador Web", icono: "🌐" };
+}
+
 export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [historial, setHistorial] = useState<PushNotificationRecord[]>([]);
   const [plantillas, setPlantillas] = useState<PushTemplateItem[]>([]);
   const [totalSuscripciones, setTotalSuscripciones] = useState<number>(0);
+  const [suscripcionesList, setSuscripcionesList] = useState<any[]>([]);
   const [vapidConfigured, setVapidConfigured] = useState<boolean>(true);
   const [cargando, setCargando] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -82,6 +104,7 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
         if (data.plantillas) setPlantillas(data.plantillas);
         if (typeof data.totalSuscripciones === "number") setTotalSuscripciones(data.totalSuscripciones);
         if (typeof data.vapidConfigured === "boolean") setVapidConfigured(data.vapidConfigured);
+        if (Array.isArray(data.suscripciones)) setSuscripcionesList(data.suscripciones);
       }
     } catch (err) {
       console.error("Error al cargar historial push:", err);
@@ -288,6 +311,8 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
         body: JSON.stringify({
           subscription: sub.toJSON(),
           userAgent: navigator.userAgent,
+          clienteNombre: "Administrador (Este Navegador)",
+          clienteUsuario: "admin",
         }),
       });
 
@@ -759,6 +784,68 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Lista de Dispositivos y Clientes Suscritos en Tiempo Real */}
+      <div className="bg-[#151f2e] border border-white/10 rounded-3xl p-6 shadow-xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10 flex-wrap gap-2">
+          <div>
+            <h3 className="text-base font-black text-white flex items-center gap-2">
+              <span>📱</span>
+              <span>Dispositivos Conectados en Tiempo Real ({suscripcionesList.length})</span>
+            </h3>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Terminales y celulares que tienen permisos activos y recibirán tus mensajes push.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={cargarHistorial}
+            disabled={cargando}
+            className="text-xs text-emerald-400 hover:text-emerald-300 font-bold cursor-pointer"
+          >
+            {cargando ? "Actualizando..." : "🔄 Refrescar lista"}
+          </button>
+        </div>
+
+        {suscripcionesList.length === 0 ? (
+          <div className="bg-[#0d141e] border border-dashed border-white/10 rounded-2xl p-6 text-center text-slate-400 text-xs">
+            <span className="text-2xl block mb-1">📭</span>
+            Aún no hay terminales registradas. Conecta tu pantalla con el botón verde de arriba o invita a tus clientes a activar notificaciones.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {suscripcionesList.map((sub, idx) => {
+              const info = parseDispositivo(sub.userAgent);
+              return (
+                <div
+                  key={sub.id || idx}
+                  className="bg-[#0d141e] border border-white/10 hover:border-emerald-500/30 rounded-2xl p-3.5 space-y-2 shadow-sm transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">{info.icono}</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Listo</span>
+                    </span>
+                  </div>
+                  <div>
+                    <h5 className="font-extrabold text-white text-xs truncate">
+                      {sub.clienteNombre || "Cliente / Visitante Web"}
+                    </h5>
+                    {sub.clienteUsuario && (
+                      <p className="text-[10px] text-emerald-400 font-mono">@{sub.clienteUsuario}</p>
+                    )}
+                    <p className="text-[11px] text-slate-300 mt-0.5">{info.nombre}</p>
+                  </div>
+                  <div className="pt-2 border-t border-white/5 text-[10px] text-slate-500 font-mono">
+                    Conectado: {sub.created_at ? new Date(sub.created_at).toLocaleString("es-AR") : "Reciente"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

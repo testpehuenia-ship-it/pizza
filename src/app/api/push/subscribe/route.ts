@@ -25,6 +25,10 @@ export async function POST(request: Request) {
       );
     }
 
+    const clienteNombre = body.clienteNombre || sub.clienteNombre;
+    const clienteUsuario = body.clienteUsuario || sub.clienteUsuario;
+    const clienteTelefono = body.clienteTelefono || sub.clienteTelefono;
+
     await registrarSuscripcionPush(
       {
         endpoint,
@@ -33,7 +37,12 @@ export async function POST(request: Request) {
           auth: String(keys.auth),
         },
       },
-      userAgent
+      userAgent,
+      {
+        nombre: clienteNombre,
+        usuario: clienteUsuario,
+        telefono: clienteTelefono,
+      }
     );
 
     return NextResponse.json({

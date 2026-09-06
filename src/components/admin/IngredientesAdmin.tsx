@@ -31,6 +31,7 @@ export function IngredientesAdmin({
   const [formImagenUrl, setFormImagenUrl] = useState("");
   const [formCategoriaAsignada, setFormCategoriaAsignada] = useState<string>("ninguno");
   const [formEspecialidades, setFormEspecialidades] = useState<string[]>([]);
+  const [formOculto, setFormOculto] = useState(false);
 
   const abrirModalCrear = () => {
     setIngEditando(null);
@@ -39,6 +40,7 @@ export function IngredientesAdmin({
     setFormImagenUrl("");
     setFormCategoriaAsignada("ninguno"); // Por defecto ninguno como pidió el usuario
     setFormEspecialidades([]);
+    setFormOculto(false);
     setModalAbierto(true);
   };
 
@@ -49,6 +51,7 @@ export function IngredientesAdmin({
     setFormImagenUrl(ing.imagenUrl || "");
     setFormCategoriaAsignada(ing.categoriaAsignada || "ninguno");
     setFormEspecialidades(ing.especialidadesAsignadas ? [...ing.especialidadesAsignadas] : []);
+    setFormOculto(ing.oculto ?? false);
     setModalAbierto(true);
   };
 
@@ -87,6 +90,7 @@ export function IngredientesAdmin({
       imagenUrl: formImagenUrl.trim(),
       categoriaAsignada: formCategoriaAsignada,
       especialidadesAsignadas: formCategoriaAsignada === "pizzas" ? formEspecialidades : [],
+      oculto: formOculto,
     };
 
     try {
@@ -110,6 +114,32 @@ export function IngredientesAdmin({
       onMostrarNotificacion(err.message, "error");
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const handleToggleOcultar = async (ing: IngredienteCatalogItem) => {
+    const nuevoEstado = !ing.oculto;
+    const payload: IngredienteCatalogItem = {
+      ...ing,
+      oculto: nuevoEstado,
+    };
+
+    try {
+      const res = await fetch("/api/catalog/ingredientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("No se pudo actualizar visibilidad");
+      onMostrarNotificacion(
+        nuevoEstado
+          ? `Ingrediente "${ing.nombre}" ocultado (Pausado por stock).`
+          : `Ingrediente "${ing.nombre}" publicado y visible.`,
+        "exito"
+      );
+      onRecargarCatalogo();
+    } catch (err: any) {
+      onMostrarNotificacion(err.message, "error");
     }
   };
 
@@ -220,21 +250,32 @@ export function IngredientesAdmin({
         {ingredientesFiltrados.map((ing) => (
           <div
             key={ing.id}
-            className="bg-[#151f2e] border border-white/10 hover:border-emerald-500/30 rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all"
+            className={`bg-[#151f2e] border rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all ${
+              ing.oculto
+                ? "border-red-500/40 bg-[#151f2e]/75 opacity-90 shadow-red-950/20"
+                : "border-white/10 hover:border-emerald-500/30"
+            }`}
           >
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                    ing.categoriaAsignada === "ninguno" || !ing.categoriaAsignada
-                      ? "bg-amber-950/60 text-amber-300 border-amber-500/30"
-                      : "bg-emerald-950/60 text-emerald-300 border-emerald-500/30"
-                  }`}
-                >
-                  {ing.categoriaAsignada === "ninguno" || !ing.categoriaAsignada
-                    ? "✨ Libre (Ninguno)"
-                    : `Asignado: ${ing.categoriaAsignada}`}
-                </span>
+              <div className="flex items-center justify-between gap-1 mb-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      ing.categoriaAsignada === "ninguno" || !ing.categoriaAsignada
+                        ? "bg-amber-950/60 text-amber-300 border-amber-500/30"
+                        : "bg-emerald-950/60 text-emerald-300 border-emerald-500/30"
+                    }`}
+                  >
+                    {ing.categoriaAsignada === "ninguno" || !ing.categoriaAsignada
+                      ? "✨ Libre (Ninguno)"
+                      : `Asignado: ${ing.categoriaAsignada}`}
+                  </span>
+                  {ing.oculto && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 animate-pulse">
+                      ⏸️ Sin Stock
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] text-slate-500 font-mono">ID: {ing.id}</span>
               </div>
 
@@ -263,23 +304,40 @@ export function IngredientesAdmin({
               )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-end gap-1.5">
-              <button
-                type="button"
-                onClick={() => abrirModalEditar(ing)}
-                className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
-              >
-                <span>✏️</span>
-                <span>Modificar</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleEliminarIngrediente(ing)}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs p-1.5 rounded-xl"
-                title="Eliminar ingrediente"
-              >
-                🗑️
-              </button>
+            <div className="mt-4 pt-3 border-t border-white/10 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => handleToggleOcultar(ing)}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
+                    ing.oculto
+                      ? "bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30"
+                      : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                  }`}
+                  title={ing.oculto ? "Hacer click para volver a publicar este ingrediente" : "Hacer click para ocultar por falta de stock"}
+                >
+                  <span>{ing.oculto ? "🔴 Oculto (Sin stock)" : "🟢 Publicado"}</span>
+                </button>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => abrirModalEditar(ing)}
+                    className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>✏️</span>
+                    <span>Modificar</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEliminarIngrediente(ing)}
+                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs p-1.5 rounded-xl cursor-pointer"
+                    title="Eliminar ingrediente"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ))}
@@ -418,6 +476,20 @@ export function IngredientesAdmin({
                   </div>
                 </div>
               )}
+
+              {/* Ocultar publicación / Pausar por falta de stock */}
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d141e] border border-white/10">
+                <input
+                  type="checkbox"
+                  id="chkOcultoIng"
+                  checked={formOculto}
+                  onChange={(e) => setFormOculto(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 text-red-500 focus:ring-0 cursor-pointer accent-red-500"
+                />
+                <label htmlFor="chkOcultoIng" className="text-xs text-slate-300 font-semibold cursor-pointer">
+                  Ocultar ingrediente en el menú (Pausar por falta de stock o agotado)
+                </label>
+              </div>
 
               {/* Botones */}
               <div className="pt-3 border-t border-white/10 flex justify-end gap-2">

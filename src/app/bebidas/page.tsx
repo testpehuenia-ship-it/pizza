@@ -42,10 +42,12 @@ export default function BebidasPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  const bebidasFiltradas = listaBebidas.filter((b) => {
-    if (filtro === "todas") return true;
-    return b.categoria === filtro;
-  });
+  const bebidasFiltradas = listaBebidas
+    .filter((b) => !b.oculto)
+    .filter((b) => {
+      if (filtro === "todas") return true;
+      return b.categoria === filtro;
+    });
 
   const totalBebidasSeleccionadas = bebidas.reduce((acc, b) => acc + b.cantidad, 0);
 

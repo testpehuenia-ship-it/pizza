@@ -28,6 +28,7 @@ export function EspecialidadesAdmin({
   const [formPrecio4, setFormPrecio4] = useState<number>(0);
   const [formPrecio8, setFormPrecio8] = useState<number>(0);
   const [formImagen, setFormImagen] = useState("");
+  const [formOculto, setFormOculto] = useState(false);
   const [formIngredientes, setFormIngredientes] = useState<
     Array<{
       id: string;
@@ -53,6 +54,7 @@ export function EspecialidadesAdmin({
     setFormPrecio4(12000);
     setFormPrecio8(24000);
     setFormImagen("🍕");
+    setFormOculto(false);
     setFormIngredientes([]);
     setModalAbierto(true);
   };
@@ -64,6 +66,7 @@ export function EspecialidadesAdmin({
     setFormPrecio4(p.precio4);
     setFormPrecio8(p.precio8);
     setFormImagen(p.imagen || "🍕");
+    setFormOculto(Boolean(p.oculto));
     setFormIngredientes(p.ingredientesDecorables ? [...p.ingredientesDecorables] : []);
     setModalAbierto(true);
   };
@@ -112,6 +115,7 @@ export function EspecialidadesAdmin({
       precio4: Number(formPrecio4),
       precio8: Number(formPrecio8),
       imagen: formImagen,
+      oculto: formOculto,
       ingredientesDecorables: formIngredientes,
     };
 
@@ -136,6 +140,26 @@ export function EspecialidadesAdmin({
       onMostrarNotificacion(err.message, "error");
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const handleToggleOcultar = async (p: PizzaDataType) => {
+    try {
+      const res = await fetch("/api/catalog/pizzas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...p, oculto: !p.oculto }),
+      });
+      if (!res.ok) throw new Error("Error al modificar estado");
+      onMostrarNotificacion(
+        p.oculto
+          ? `"${p.nombre}" ahora está visible y publicado en el menú.`
+          : `"${p.nombre}" fue ocultado del menú (sin stock).`,
+        "exito"
+      );
+      onRecargarCatalogo();
+    } catch (err: any) {
+      onMostrarNotificacion(err.message, "error");
     }
   };
 
@@ -275,7 +299,11 @@ export function EspecialidadesAdmin({
         {pizzasFiltradas.map((pizza) => (
           <div
             key={pizza.id}
-            className="bg-[#151f2e] border border-white/10 hover:border-emerald-500/30 rounded-2xl p-4 shadow-xl transition-all grid grid-cols-1 lg:grid-cols-12 gap-4 items-center"
+            className={`bg-[#151f2e] border ${
+              pizza.oculto
+                ? "border-red-500/35 bg-[#151f2e]/75 opacity-85"
+                : "border-white/10 hover:border-emerald-500/30"
+            } rounded-2xl p-4 shadow-xl transition-all grid grid-cols-1 lg:grid-cols-12 gap-4 items-center`}
           >
             {/* Columna 1: Nombre + Imagen lado a lado */}
             <div className="lg:col-span-4 flex items-center gap-3.5">
@@ -298,6 +326,12 @@ export function EspecialidadesAdmin({
                   <span className="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
                     ID: {pizza.id}
                   </span>
+                  {pizza.oculto && (
+                    <span className="text-[10px] bg-red-500/20 text-red-300 border border-red-500/40 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                      <span>⏸️</span>
+                      <span>Sin Stock / Oculto</span>
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed">
                   {pizza.descripcion}
@@ -354,20 +388,35 @@ export function EspecialidadesAdmin({
             <div className="lg:col-span-2 flex lg:flex-col items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => abrirModalEditar(pizza)}
-                className="flex-1 lg:w-full bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs py-2 px-3 rounded-xl transition-all text-center flex items-center justify-center gap-1.5"
+                onClick={() => handleToggleOcultar(pizza)}
+                className={`flex-1 lg:w-full font-bold text-xs py-1.5 px-2.5 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer border ${
+                  pizza.oculto
+                    ? "bg-red-500/15 hover:bg-red-500/25 text-red-300 border-red-500/40"
+                    : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                }`}
+                title={pizza.oculto ? "Pausada por stock. Click para publicar en menú" : "Publicada. Click para ocultar por falta de stock"}
               >
-                <span>✏️</span>
-                <span>Modificar</span>
+                <span>{pizza.oculto ? "🔴" : "🟢"}</span>
+                <span>{pizza.oculto ? "Oculto (Sin Stock)" : "Publicado"}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => handleEliminarPizza(pizza)}
-                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-xs p-2 rounded-xl transition-all"
-                title="Eliminar especialidad"
-              >
-                🗑️
-              </button>
+              <div className="flex items-center gap-2 w-full">
+                <button
+                  type="button"
+                  onClick={() => abrirModalEditar(pizza)}
+                  className="flex-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs py-1.5 px-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>✏️</span>
+                  <span>Modificar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleEliminarPizza(pizza)}
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-xs p-1.5 rounded-xl transition-all cursor-pointer"
+                  title="Eliminar especialidad"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -394,13 +443,37 @@ export function EspecialidadesAdmin({
               <button
                 type="button"
                 onClick={() => setModalAbierto(false)}
-                className="text-slate-400 hover:text-white text-lg font-black px-2 py-1 rounded-lg"
+                className="text-slate-400 hover:text-white text-lg font-black px-2 py-1 rounded-lg cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleGuardarPizza} className="space-y-4">
+              {/* Ocultar publicación por falta de stock */}
+              <div className="bg-[#0d141e] border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="chkOcultarPizza"
+                    checked={formOculto}
+                    onChange={(e) => setFormOculto(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 text-red-500 focus:ring-0 cursor-pointer"
+                  />
+                  <label htmlFor="chkOcultarPizza" className="text-xs text-white font-bold cursor-pointer">
+                    Ocultar publicación en el menú (Pausar por falta de stock o agotado)
+                  </label>
+                </div>
+                <span
+                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                    formOculto
+                      ? "bg-red-500/20 text-red-300 border border-red-500/30"
+                      : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                  }`}
+                >
+                  {formOculto ? "🔴 Oculto" : "🟢 Visible"}
+                </span>
+              </div>
               {/* Nombre de la pizza (ejemplo: Napolitana Boston) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

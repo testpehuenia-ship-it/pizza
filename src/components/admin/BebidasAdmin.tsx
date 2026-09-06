@@ -27,6 +27,7 @@ export function BebidasAdmin({
   const [formPrecio, setFormPrecio] = useState<number>(1500);
   const [formImagenUrl, setFormImagenUrl] = useState("🥤");
   const [formDescripcion, setFormDescripcion] = useState("");
+  const [formOculto, setFormOculto] = useState(false);
 
   const abrirModalCrear = () => {
     setBebidaEditando(null);
@@ -35,6 +36,7 @@ export function BebidasAdmin({
     setFormPrecio(2000);
     setFormImagenUrl("🥤");
     setFormDescripcion("");
+    setFormOculto(false);
     setModalAbierto(true);
   };
 
@@ -45,6 +47,7 @@ export function BebidasAdmin({
     setFormPrecio(b.precio);
     setFormImagenUrl(b.imagenUrl || "🥤");
     setFormDescripcion(b.descripcion || "");
+    setFormOculto(b.oculto ?? false);
     setModalAbierto(true);
   };
 
@@ -83,6 +86,7 @@ export function BebidasAdmin({
       precio: Number(formPrecio),
       imagenUrl: formImagenUrl,
       descripcion: formDescripcion.trim(),
+      oculto: formOculto,
     };
 
     try {
@@ -106,6 +110,32 @@ export function BebidasAdmin({
       onMostrarNotificacion(err.message, "error");
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const handleToggleOcultar = async (b: BebidaDataType) => {
+    const nuevoEstado = !b.oculto;
+    const payload: BebidaDataType = {
+      ...b,
+      oculto: nuevoEstado,
+    };
+
+    try {
+      const res = await fetch("/api/catalog/bebidas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("No se pudo actualizar visibilidad");
+      onMostrarNotificacion(
+        nuevoEstado
+          ? `Bebida "${b.nombre}" oculta del menú (Pausada por stock).`
+          : `Bebida "${b.nombre}" republicada en el menú.`,
+        "exito"
+      );
+      onRecargarCatalogo();
+    } catch (err: any) {
+      onMostrarNotificacion(err.message, "error");
     }
   };
 
@@ -194,14 +224,25 @@ export function BebidasAdmin({
         {bebidasFiltradas.map((b) => (
           <div
             key={b.id}
-            className="bg-[#151f2e] border border-white/10 hover:border-emerald-500/30 rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all"
+            className={`bg-[#151f2e] border rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all ${
+              b.oculto
+                ? "border-red-500/40 bg-[#151f2e]/75 opacity-90 shadow-red-950/20"
+                : "border-white/10 hover:border-emerald-500/30"
+            }`}
           >
             <div>
-              {/* Imagen y Categoría */}
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-                  {b.categoria}
-                </span>
+              {/* Imagen, Categoría y Estado de Stock */}
+              <div className="flex items-center justify-between gap-1 mb-3">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                    {b.categoria}
+                  </span>
+                  {b.oculto && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 animate-pulse">
+                      ⏸️ Sin Stock
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] text-slate-500 font-mono">ID: {b.id}</span>
               </div>
 
@@ -223,19 +264,35 @@ export function BebidasAdmin({
             </div>
 
             {/* Precio y botones de modificación */}
-            <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-slate-400 block">Precio:</span>
-                <span className="text-base font-black text-emerald-400 font-mono">
-                  ${b.precio.toLocaleString("es-AR")}
-                </span>
+            <div className="mt-4 pt-3 border-t border-white/10 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-slate-400 block">Precio:</span>
+                  <span className="text-base font-black text-emerald-400 font-mono">
+                    ${b.precio.toLocaleString("es-AR")}
+                  </span>
+                </div>
+
+                {/* Botón rápido para Ocultar / Publicar por falta de stock */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleOcultar(b)}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
+                    b.oculto
+                      ? "bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30"
+                      : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                  }`}
+                  title={b.oculto ? "Hacer click para publicar en el menú" : "Hacer click para ocultar por falta de stock"}
+                >
+                  <span>{b.oculto ? "🔴 Oculto (Sin stock)" : "🟢 Publicado"}</span>
+                </button>
               </div>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-end gap-1.5 pt-1">
                 <button
                   type="button"
                   onClick={() => abrirModalEditar(b)}
-                  className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1"
+                  className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
                 >
                   <span>✏️</span>
                   <span>Modificar</span>
@@ -243,7 +300,7 @@ export function BebidasAdmin({
                 <button
                   type="button"
                   onClick={() => handleEliminarBebida(b)}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs p-1.5 rounded-xl"
+                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs p-1.5 rounded-xl cursor-pointer"
                   title="Eliminar bebida"
                 >
                   🗑️
@@ -370,6 +427,20 @@ export function BebidasAdmin({
                     </span>
                   </div>
                 )}
+              </div>
+
+              {/* Ocultar publicación por falta de stock */}
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d141e] border border-white/10">
+                <input
+                  type="checkbox"
+                  id="chkOcultoBebida"
+                  checked={formOculto}
+                  onChange={(e) => setFormOculto(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 text-red-500 focus:ring-0 cursor-pointer accent-red-500"
+                />
+                <label htmlFor="chkOcultoBebida" className="text-xs text-slate-300 font-semibold cursor-pointer">
+                  Ocultar publicación en el menú (Pausar por falta de stock o agotado)
+                </label>
               </div>
 
               {/* Botones */}

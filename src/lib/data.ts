@@ -5,6 +5,7 @@ export interface IngredienteDecorativo {
   color: string;
   imagenUrl?: string;
   posiciones: Array<{ x: number; y: number; rot: number; scale?: number }>;
+  oculto?: boolean;
 }
 
 export interface PizzaDataType {
@@ -15,6 +16,7 @@ export interface PizzaDataType {
   precio8: number;
   imagen?: string;
   ingredientesDecorables?: IngredienteDecorativo[];
+  oculto?: boolean;
 }
 
 export interface BebidaDataType {
@@ -24,6 +26,7 @@ export interface BebidaDataType {
   categoria: "gaseosa" | "agua" | "cerveza";
   imagenUrl?: string;
   descripcion?: string;
+  oculto?: boolean;
 }
 
 export interface AderezoDataType {

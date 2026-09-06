@@ -23,7 +23,9 @@ export default function MenuPage() {
   } = useTiendaStore();
 
   const [seccion, setSeccion] = useState<"pizzas" | "combos">("pizzas");
-  const [listaPizzas, setListaPizzas] = useState<PizzaDataType[]>(PIZZAS_DATA);
+  const [listaPizzas, setListaPizzas] = useState<PizzaDataType[]>(
+    PIZZAS_DATA.filter((p) => !p.oculto)
+  );
   const [listaCombos, setListaCombos] = useState<ComboDataType[]>([]);
   const [cargandoCatalogo, setCargandoCatalogo] = useState(false);
 
@@ -39,10 +41,12 @@ export default function MenuPage() {
         const data = await res.json();
         if (data.success && data.catalog) {
           if (data.catalog.pizzas && data.catalog.pizzas.length > 0) {
-            setListaPizzas(data.catalog.pizzas);
+            const pizzasVisibles = data.catalog.pizzas.filter((p: PizzaDataType) => !p.oculto);
+            setListaPizzas(pizzasVisibles);
           }
           if (data.catalog.combos && data.catalog.combos.length > 0) {
-            setListaCombos(data.catalog.combos);
+            const combosVisibles = data.catalog.combos.filter((c: ComboDataType) => !c.oculto);
+            setListaCombos(combosVisibles);
           }
         }
       } catch (err) {

@@ -39,6 +39,7 @@ export function CombosAdmin({
   const [formPrecio, setFormPrecio] = useState<number>(0);
   const [formAderezos, setFormAderezos] = useState<string[]>([]);
   const [formPermitirModificar, setFormPermitirModificar] = useState(true);
+  const [formOculto, setFormOculto] = useState(false);
 
   // Resolver la imagen real de la pizza del menú (nunca emoji o icono)
   const resolverImagenPizza = (p?: PizzaDataType): string => {
@@ -87,6 +88,7 @@ export function CombosAdmin({
     setFormDescripcion("Elegí tu combo con precio especial y aderezos a gusto");
     setFormAderezos(["Orégano", "Aceitunas extra"]);
     setFormPermitirModificar(true);
+    setFormOculto(false);
     setModalAbierto(true);
   };
 
@@ -115,6 +117,7 @@ export function CombosAdmin({
     setFormPrecio(c.precio);
     setFormAderezos(c.aderezosIncluidos ? [...c.aderezosIncluidos] : []);
     setFormPermitirModificar(c.ingredientesPermitidosModificar ?? true);
+    setFormOculto(c.oculto ?? false);
     setModalAbierto(true);
   };
 
@@ -222,6 +225,7 @@ export function CombosAdmin({
       precio: Number(formPrecio),
       aderezosIncluidos: formAderezos,
       ingredientesPermitidosModificar: formPermitirModificar,
+      oculto: formOculto,
     };
 
     try {
@@ -243,6 +247,32 @@ export function CombosAdmin({
       onMostrarNotificacion(err.message, "error");
     } finally {
       setGuardando(false);
+    }
+  };
+
+  const handleToggleOcultar = async (c: ComboDataType) => {
+    const nuevoEstado = !c.oculto;
+    const payload: ComboDataType = {
+      ...c,
+      oculto: nuevoEstado,
+    };
+
+    try {
+      const res = await fetch("/api/catalog/combos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("No se pudo actualizar visibilidad");
+      onMostrarNotificacion(
+        nuevoEstado
+          ? `Combo "${c.nombre}" ocultado del menú (Pausado por stock).`
+          : `Combo "${c.nombre}" republicado en el menú.`,
+        "exito"
+      );
+      onRecargarCatalogo();
+    } catch (err: any) {
+      onMostrarNotificacion(err.message, "error");
     }
   };
 
@@ -296,9 +326,28 @@ export function CombosAdmin({
           return (
             <div
               key={combo.id}
-              className="bg-[#151f2e] border border-white/10 hover:border-emerald-500/30 rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all"
+              className={`bg-[#151f2e] border rounded-2xl p-4 shadow-xl flex flex-col justify-between transition-all ${
+                combo.oculto
+                  ? "border-red-500/40 bg-[#151f2e]/75 opacity-90 shadow-red-950/20"
+                  : "border-white/10 hover:border-emerald-500/30"
+              }`}
             >
               <div>
+                {/* Header de la tarjeta del Combo con ID y estado de stock */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                      Combo Especial
+                    </span>
+                    {combo.oculto && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 animate-pulse">
+                        ⏸️ Sin Stock
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">ID: {combo.id}</span>
+                </div>
+
                 {/* Vista previa compuesta: Imagen Real Pizza + Imagen Real Bebida lado a lado */}
                 <div className="bg-[#0d141e] border border-white/5 rounded-2xl p-3 flex items-center justify-center gap-4 mb-3 shadow-inner">
                   {/* Lado Izquierdo: Pizza con foto real del menú */}
@@ -365,23 +414,40 @@ export function CombosAdmin({
                 )}
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => abrirModalEditar(combo)}
-                  className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  <span>✏️</span>
-                  <span>Modificar Combo</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleEliminarCombo(combo)}
-                  className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs p-1.5 rounded-xl cursor-pointer"
-                  title="Eliminar combo"
-                >
-                  🗑️
-                </button>
+              <div className="mt-4 pt-3 border-t border-white/10 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleOcultar(combo)}
+                    className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
+                      combo.oculto
+                        ? "bg-red-500/20 text-red-300 border border-red-500/40 hover:bg-red-500/30"
+                        : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
+                    }`}
+                    title={combo.oculto ? "Hacer click para publicar en el menú" : "Hacer click para ocultar por falta de stock"}
+                  >
+                    <span>{combo.oculto ? "🔴 Oculto (Sin stock)" : "🟢 Publicado"}</span>
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => abrirModalEditar(combo)}
+                      className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>✏️</span>
+                      <span>Modificar</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleEliminarCombo(combo)}
+                      className="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 text-xs p-1.5 rounded-xl cursor-pointer"
+                      title="Eliminar combo"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           );
@@ -630,6 +696,20 @@ export function CombosAdmin({
                     Permitir al cliente personalizar ingredientes o aderezos al encargar
                   </label>
                 </div>
+              </div>
+
+              {/* Ocultar publicación / Pausar por falta de stock */}
+              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d141e] border border-white/10">
+                <input
+                  type="checkbox"
+                  id="chkOcultoCombo"
+                  checked={formOculto}
+                  onChange={(e) => setFormOculto(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 text-red-500 focus:ring-0 cursor-pointer accent-red-500"
+                />
+                <label htmlFor="chkOcultoCombo" className="text-xs text-slate-300 font-semibold cursor-pointer">
+                  Ocultar publicación en el menú (Pausar combo por falta de stock o ingredientes agotados)
+                </label>
               </div>
 
               {/* Botones */}

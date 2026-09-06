@@ -21,6 +21,7 @@ export interface IngredienteCatalogItem {
   imagenUrl?: string;
   categoriaAsignada?: string; // "pizzas" | "hamburguesas" | "empanadas" | "ninguno"
   especialidadesAsignadas?: string[]; // IDs de pizzas asignadas
+  oculto?: boolean;
 }
 
 export interface ComboDataType {
@@ -37,6 +38,7 @@ export interface ComboDataType {
   precio: number;
   aderezosIncluidos?: string[];
   ingredientesPermitidosModificar?: boolean;
+  oculto?: boolean;
 }
 
 export interface CategoriaConfig {

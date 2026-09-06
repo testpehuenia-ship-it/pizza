@@ -62,9 +62,13 @@ export function CarruselPizzas3D({
   const pizzaExhibida =
     (transicion ? pizzas[transicion.haciaIdx] : pizzas[activeIndex]) || pizzas[0];
 
+  const ingredientesVisibles = (pizzaExhibida.ingredientesDecorables || []).filter(
+    (i) => !i.oculto
+  );
+
   const ingredientesActivos =
     ingredientesActivosMap[pizzaExhibida.id] ||
-    (pizzaExhibida.ingredientesDecorables || []).map((i) => i.id);
+    ingredientesVisibles.map((i) => i.id);
 
   const precioActual =
     tamañoSeleccionado === "4" ? pizzaExhibida.precio4 : pizzaExhibida.precio8;
@@ -208,7 +212,7 @@ export function CarruselPizzas3D({
   const decorarTodos = () => {
     setIngredientesActivosMap({
       ...ingredientesActivosMap,
-      [pizzaExhibida.id]: (pizzaExhibida.ingredientesDecorables || []).map((i) => i.id),
+      [pizzaExhibida.id]: ingredientesVisibles.map((i) => i.id),
     });
   };
 
@@ -422,7 +426,7 @@ export function CarruselPizzas3D({
         </div>
 
         <div className="flex gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar">
-          {(pizzaExhibida.ingredientesDecorables || []).map((ing) => {
+          {ingredientesVisibles.map((ing) => {
             const activo = ingredientesActivos.includes(ing.id);
             return (
               <button

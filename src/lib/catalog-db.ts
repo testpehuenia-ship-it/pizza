@@ -137,7 +137,7 @@ function generarCombosIniciales(): ComboDataType[] {
       pizzaId: "napolitana",
       pizzaNombre: "Napolitana",
       pizzaTamano: "8",
-      pizzaImagen: "🍅",
+      pizzaImagen: "/images/pizzas/pizza_base_madera.png",
       bebidaId: "coca-15l",
       bebidaNombre: "Coca-Cola 1.5L",
       bebidaImagen: "🍾",
@@ -152,7 +152,7 @@ function generarCombosIniciales(): ComboDataType[] {
       pizzaId: "especial",
       pizzaNombre: "Especial 0600",
       pizzaTamano: "8",
-      pizzaImagen: "⭐",
+      pizzaImagen: "/images/pizzas/pizza_base_madera.png",
       bebidaId: "patagonia-473",
       bebidaNombre: "Cerveza Patagonia 473ml",
       bebidaImagen: "🍻",
@@ -256,9 +256,23 @@ async function persistCatalog(data: CatalogData): Promise<void> {
   }
 }
 
+function sanitizarCatalog(data: CatalogData): CatalogData {
+  if (!data) return data;
+  if (data.combos && Array.isArray(data.combos)) {
+    data.combos = data.combos.map((c) => ({
+      ...c,
+      pizzaImagen:
+        c.pizzaImagen && (c.pizzaImagen.startsWith("/") || c.pizzaImagen.startsWith("http"))
+          ? c.pizzaImagen
+          : "/images/pizzas/pizza_base_madera.png",
+    }));
+  }
+  return data;
+}
+
 export async function getCatalog(): Promise<CatalogData> {
   if (memoryCatalogCache) {
-    return memoryCatalogCache;
+    return sanitizarCatalog(memoryCatalogCache);
   }
 
   // 1. Intentar leer de Turso si está disponible
@@ -275,8 +289,9 @@ export async function getCatalog(): Promise<CatalogData> {
       const res = await db.execute(`SELECT value FROM tienda_catalogo WHERE key = 'main_catalog' LIMIT 1`);
       if (res.rows.length > 0 && res.rows[0].value) {
         const parsed = JSON.parse(String(res.rows[0].value)) as CatalogData;
-        memoryCatalogCache = parsed;
-        return parsed;
+        const sanitized = sanitizarCatalog(parsed);
+        memoryCatalogCache = sanitized;
+        return sanitized;
       }
     } catch (tursoErr) {
       console.warn("Turso no disponible para catálogo, usando archivo local:", tursoErr);
@@ -287,13 +302,15 @@ export async function getCatalog(): Promise<CatalogData> {
   try {
     const content = await fs.readFile(CATALOG_FILE_PATH, "utf-8");
     const parsed = JSON.parse(content) as CatalogData;
-    memoryCatalogCache = parsed;
-    return parsed;
+    const sanitized = sanitizarCatalog(parsed);
+    memoryCatalogCache = sanitized;
+    return sanitized;
   } catch (err) {
     // Si no existe, inicializamos con los valores por defecto
     const initial = await getInitialCatalogData();
-    await persistCatalog(initial);
-    return initial;
+    const sanitized = sanitizarCatalog(initial);
+    await persistCatalog(sanitized);
+    return sanitized;
   }
 }
 

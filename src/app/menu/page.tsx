@@ -241,16 +241,16 @@ export default function MenuPage() {
                     <div className="bg-emerald-50/60 rounded-2xl p-3 flex items-center justify-center gap-4 mb-3">
                       <div className="flex flex-col items-center">
                         <div className="w-16 h-16 rounded-xl bg-white border border-emerald-100 flex items-center justify-center shadow-sm overflow-hidden">
-                          {combo.pizzaImagen &&
-                          (combo.pizzaImagen.startsWith("/") || combo.pizzaImagen.startsWith("http")) ? (
-                            <img
-                              src={combo.pizzaImagen}
-                              alt={combo.pizzaNombre}
-                              className="w-full h-full object-contain p-1"
-                            />
-                          ) : (
-                            <span className="text-3xl">{combo.pizzaImagen || "🍕"}</span>
-                          )}
+                          <img
+                            src={
+                              combo.pizzaImagen &&
+                              (combo.pizzaImagen.startsWith("/") || combo.pizzaImagen.startsWith("http"))
+                                ? combo.pizzaImagen
+                                : "/images/pizzas/pizza_base_madera.png"
+                            }
+                            alt={combo.pizzaNombre}
+                            className="w-full h-full object-cover filter drop-shadow"
+                          />
                         </div>
                         <span className="text-[10px] font-bold text-[#14532d] mt-1 max-w-[90px] truncate text-center">
                           {combo.pizzaNombre} ({combo.pizzaTamano}p)

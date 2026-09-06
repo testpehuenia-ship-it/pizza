@@ -10,6 +10,8 @@ interface PushAdminProps {
 export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
   const [historial, setHistorial] = useState<PushNotificationRecord[]>([]);
   const [plantillas, setPlantillas] = useState<PushTemplateItem[]>([]);
+  const [totalSuscripciones, setTotalSuscripciones] = useState<number>(0);
+  const [vapidConfigured, setVapidConfigured] = useState<boolean>(true);
   const [cargando, setCargando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [guardandoPlantilla, setGuardandoPlantilla] = useState(false);
@@ -66,6 +68,8 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
       if (data.success) {
         if (data.historial) setHistorial(data.historial.slice(0, 3));
         if (data.plantillas) setPlantillas(data.plantillas);
+        if (typeof data.totalSuscripciones === "number") setTotalSuscripciones(data.totalSuscripciones);
+        if (typeof data.vapidConfigured === "boolean") setVapidConfigured(data.vapidConfigured);
       }
     } catch (err) {
       console.error("Error al cargar historial push:", err);
@@ -97,7 +101,22 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al enviar notificación push");
 
-      onMostrarNotificacion("¡Notificación push emitida y registrada con éxito!", "exito");
+      if (typeof data.totalSuscripciones === "number") setTotalSuscripciones(data.totalSuscripciones);
+
+      if (data.totalSuscripciones === 0) {
+        onMostrarNotificacion(
+          "Notificación registrada en el historial, pero no hay dispositivos suscritos aún. Abre la tienda y permite las notificaciones para conectar el primer dispositivo.",
+          "error"
+        );
+      } else if (data.alcanzados > 0) {
+        onMostrarNotificacion(
+          `¡Notificación push emitida con éxito! Entregada en tiempo real a ${data.alcanzados} dispositivo(s).`,
+          "exito"
+        );
+      } else {
+        onMostrarNotificacion("¡Notificación push procesada y registrada con éxito!", "exito");
+      }
+
       if (data.historial) setHistorial(data.historial.slice(0, 3));
       else cargarHistorial();
     } catch (err: any) {
@@ -211,24 +230,59 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
       {/* Banner Superior de Administración de Push */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#151f2e] border border-emerald-500/20 rounded-2xl p-4 shadow-lg">
         <div>
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <span>🔔</span>
-            <span>Administración de Mensajes Push</span>
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <span>🔔</span>
+              <span>Administración de Mensajes Push</span>
+            </h2>
+            <span
+              className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${
+                vapidConfigured
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  : "bg-red-500/20 text-red-300 border-red-500/40"
+              }`}
+            >
+              {vapidConfigured ? "VAPID Activo" : "VAPID Desconectado"}
+            </span>
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
             Enviá ofertas relámpago, avisos de promociones y novedades directamente a las pantallas de los clientes.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleProbarEnEsteDispositivo}
-          className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
-        >
-          <span>🧪</span>
-          <span>Probar en mi pantalla</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-[#0d141e] border border-emerald-500/30 px-3 py-1.5 rounded-xl text-center">
+            <div className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Dispositivos Web Push</div>
+            <div className="text-sm font-black text-emerald-400">
+              {totalSuscripciones} {totalSuscripciones === 1 ? "Dispositivo" : "Dispositivos"}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleProbarEnEsteDispositivo}
+            className="bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/30 font-bold text-xs px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>🧪</span>
+            <span>Probar en mi pantalla</span>
+          </button>
+        </div>
       </div>
+
+      {/* Alerta didáctica si aún no hay terminales registradas */}
+      {totalSuscripciones === 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-200 shadow-md">
+          <span className="text-2xl">⚠️</span>
+          <div>
+            <h4 className="font-extrabold text-amber-300 uppercase tracking-wider text-[11px]">
+              Aún no hay clientes con notificaciones activadas
+            </h4>
+            <p className="mt-1 text-slate-300 leading-relaxed">
+              El motor de Web Push está 100% activo y configurado. Para recibir mensajes en un celular o PC, abre la tienda en un navegador (o instala la app) y pulsa <strong>"Permitir notificaciones"</strong>. El dispositivo se registrará en este contador y recibirá tus promociones.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Reglas de Precaución y Filtros Inteligentes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -5,6 +5,46 @@ import { useTiendaStore } from "@/lib/store";
 
 type PromptStep = "none" | "install" | "ios_guide" | "notifications" | "notif_success";
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function suscribirWebPush(reg: ServiceWorkerRegistration) {
+  try {
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey) return;
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const convertedKey = urlBase64ToUint8Array(vapidKey);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey as unknown as BufferSource,
+      });
+    }
+
+    if (sub) {
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subscription: sub.toJSON(),
+          userAgent: navigator.userAgent,
+        }),
+      });
+    }
+  } catch (err) {
+    console.warn("No se pudo registrar la suscripción Web Push en el servidor:", err);
+  }
+}
+
 export default function PwaPrompts() {
   const { cliente } = useTiendaStore();
   const [step, setStep] = useState<PromptStep>("none");
@@ -45,6 +85,11 @@ export default function PwaPrompts() {
 
     if ("Notification" in window) {
       setNotifPermission(Notification.permission);
+      if (Notification.permission === "granted" && "serviceWorker" in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          suscribirWebPush(reg);
+        });
+      }
     }
 
     // Escuchar evento de instalación PWA en navegadores compatibles (Chrome, Edge, Android)
@@ -194,17 +239,10 @@ export default function PwaPrompts() {
           icon: "/images/brunoagradece.webp",
         });
 
-        // Registrar suscripción de Service Worker si está activo
+        // Suscripción real a Web Push con VAPID
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.ready.then((reg) => {
-            fetch("/api/push/subscribe", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                endpoint: `sw_${Date.now()}`,
-                userAgent: navigator.userAgent,
-              }),
-            }).catch(() => {});
+            suscribirWebPush(reg);
           });
         }
 

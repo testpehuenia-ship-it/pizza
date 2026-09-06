@@ -24,9 +24,15 @@ export interface PushTemplateItem {
   fechaCreacion: string;
 }
 
+export interface PushSubscriptionKeys {
+  p256dh: string;
+  auth: string;
+}
+
 export interface PushSubscriptionItem {
   id: string;
   endpoint: string;
+  keys?: PushSubscriptionKeys;
   created_at: string;
   userAgent?: string;
 }
@@ -204,18 +210,45 @@ export async function eliminarPlantillaPush(id: string): Promise<boolean> {
 }
 
 export async function registrarSuscripcionPush(
-  endpoint: string,
+  sub: {
+    endpoint: string;
+    keys?: PushSubscriptionKeys;
+  },
   userAgent?: string
 ): Promise<boolean> {
   const store = await getPushData();
-  if (!store.suscripciones.some((s) => s.endpoint === endpoint)) {
+  if (!store.suscripciones) store.suscripciones = [];
+
+  const index = store.suscripciones.findIndex((s) => s.endpoint === sub.endpoint);
+  if (index >= 0) {
+    store.suscripciones[index] = {
+      ...store.suscripciones[index],
+      keys: sub.keys || store.suscripciones[index].keys,
+      userAgent: userAgent || store.suscripciones[index].userAgent,
+      created_at: new Date().toISOString(),
+    };
+  } else {
     store.suscripciones.push({
-      id: `sub_${Date.now()}`,
-      endpoint,
+      id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      endpoint: sub.endpoint,
+      keys: sub.keys,
       created_at: new Date().toISOString(),
       userAgent,
     });
-    await persistPushData(store);
   }
+
+  await persistPushData(store);
   return true;
+}
+
+export async function eliminarSuscripcionPush(endpoint: string): Promise<boolean> {
+  const store = await getPushData();
+  if (!store.suscripciones || store.suscripciones.length === 0) return false;
+  const initialLength = store.suscripciones.length;
+  store.suscripciones = store.suscripciones.filter((s) => s.endpoint !== endpoint);
+  if (store.suscripciones.length !== initialLength) {
+    await persistPushData(store);
+    return true;
+  }
+  return false;
 }

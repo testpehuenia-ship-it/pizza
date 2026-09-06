@@ -7,23 +7,11 @@ import {
   eliminarPlantillaPush,
   eliminarSuscripcionPush,
 } from "@/lib/push-db";
-
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || "";
-const vapidSubject = process.env.VAPID_SUBJECT || "mailto:soporte@0600boston.com";
-
-let vapidConfigured = false;
-if (vapidPublicKey && vapidPrivateKey) {
-  try {
-    webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
-    vapidConfigured = true;
-  } catch (err) {
-    console.error("Error al configurar VAPID en web-push:", err);
-  }
-}
+import { configureWebPush } from "@/lib/vapid-server";
 
 export async function GET() {
   try {
+    const { ok: vapidConfigured } = configureWebPush();
     const data = await getPushData();
     return NextResponse.json({
       success: true,
@@ -110,8 +98,10 @@ export async function POST(request: Request) {
     let fallidos = 0;
     const eliminados: string[] = [];
 
+    const { ok: vapidConfigured, error: vapidError } = configureWebPush();
+
     if (!vapidConfigured) {
-      console.warn("VAPID no está configurado correctamente en el entorno.");
+      console.warn("VAPID no está configurado correctamente en el entorno:", vapidError);
     } else if (suscripciones.length > 0) {
       const promesasEnvio = suscripciones.map(async (sub) => {
         // Suscripciones que no cuenten con las claves de cifrado se descartan automáticamente

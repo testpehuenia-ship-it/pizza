@@ -2,20 +2,10 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { PushNotificationRecord, PushTemplateItem } from "@/lib/push-db";
+import { getVapidPublicKey, urlBase64ToUint8Array } from "@/lib/vapid-keys";
 
 interface PushAdminProps {
   onMostrarNotificacion: (msg: string, tipo?: "exito" | "error") => void;
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }
 
 function parseDispositivo(ua?: string): { nombre: string; icono: string } {
@@ -327,19 +317,21 @@ export function PushAdmin({ onMostrarNotificacion }: PushAdminProps) {
       }
       await navigator.serviceWorker.ready;
 
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidKey) {
-        throw new Error("NEXT_PUBLIC_VAPID_PUBLIC_KEY no encontrada en las variables de entorno.");
-      }
+      const vapidKey = getVapidPublicKey();
 
       let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        const convertedKey = urlBase64ToUint8Array(vapidKey);
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedKey as unknown as BufferSource,
-        });
+      // Si la suscripción anterior existía, la renovamos para asegurar un token nuevo
+      if (sub) {
+        try {
+          await sub.unsubscribe();
+        } catch (e) {}
       }
+
+      const convertedKey = urlBase64ToUint8Array(vapidKey);
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: convertedKey as unknown as BufferSource,
+      });
 
       const res = await fetch("/api/push/subscribe", {
         method: "POST",

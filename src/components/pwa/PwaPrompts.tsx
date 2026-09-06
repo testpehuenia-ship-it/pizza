@@ -2,23 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { useTiendaStore } from "@/lib/store";
+import { getVapidPublicKey, urlBase64ToUint8Array } from "@/lib/vapid-keys";
 
 type PromptStep = "none" | "install" | "ios_guide" | "notifications" | "notif_success";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
 async function suscribirWebPush(reg: ServiceWorkerRegistration, cliente?: any) {
   try {
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const vapidKey = getVapidPublicKey();
     if (!vapidKey) return;
 
     let sub = await reg.pushManager.getSubscription();

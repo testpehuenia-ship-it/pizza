@@ -24,8 +24,10 @@ export function EspecialidadesAdmin({
 
   // Subida de foto directa desde la tarjeta de la lista
   const fileInputDirectoRef = useRef<HTMLInputElement>(null);
+  const modalFileInputRef = useRef<HTMLInputElement>(null);
   const [pizzaParaFotoDirecta, setPizzaParaFotoDirecta] = useState<PizzaDataType | null>(null);
   const [subiendoFotoId, setSubiendoFotoId] = useState<string | null>(null);
+  const [errorSubidaFoto, setErrorSubidaFoto] = useState<string | null>(null);
 
   // Estado del formulario de edición / alta
   const [pizzaEditando, setPizzaEditando] = useState<PizzaDataType | null>(null);
@@ -62,6 +64,9 @@ export function EspecialidadesAdmin({
     setFormImagen("🍕");
     setFormOculto(false);
     setFormIngredientes([]);
+    setQuitarFondoModal(false);
+    setErrorSubidaFoto(null);
+    if (modalFileInputRef.current) modalFileInputRef.current.value = "";
     setModalAbierto(true);
   };
 
@@ -74,12 +79,21 @@ export function EspecialidadesAdmin({
     setFormImagen(p.imagen || "🍕");
     setFormOculto(Boolean(p.oculto));
     setFormIngredientes(p.ingredientesDecorables ? [...p.ingredientesDecorables] : []);
+    setQuitarFondoModal(false);
+    setErrorSubidaFoto(null);
+    if (modalFileInputRef.current) modalFileInputRef.current.value = "";
     setModalAbierto(true);
   };
 
   const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>, esIngrediente = false) => {
-    if (!e.target.files || !e.target.files[0]) return;
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reseteamos el valor en el DOM para permitir seleccionar el mismo archivo consecutivamente
+    e.target.value = "";
+    if (modalFileInputRef.current) modalFileInputRef.current.value = "";
+    setErrorSubidaFoto(null);
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("removeBg", esIngrediente ? "true" : (quitarFondoModal ? "true" : "false"));
@@ -100,10 +114,12 @@ export function EspecialidadesAdmin({
         onMostrarNotificacion("Foto de ingrediente optimizada y con fondo transparente.", "exito");
       } else {
         setFormImagen(data.url);
+        setErrorSubidaFoto(null);
         onMostrarNotificacion("Foto de pizza cargada y optimizada con éxito.", "exito");
       }
     } catch (err: any) {
-      onMostrarNotificacion(err.message, "error");
+      setErrorSubidaFoto(err.message || "Error al subir la imagen");
+      onMostrarNotificacion(err.message || "Error al subir la foto", "error");
     } finally {
       if (esIngrediente) setSubiendoFotoIng(false);
       else setSubiendoFoto(false);
@@ -113,6 +129,10 @@ export function EspecialidadesAdmin({
   // Subida directa de foto para una pizza desde la lista sin abrir modal completo
   const handleSubirFotoDirecta = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    if (!file || !pizzaParaFotoDirecta) return;
+
+    e.target.value = "";
+    if (fileInputDirectoRef.current) fileInputDirectoRef.current.value = "";
     if (!file || !pizzaParaFotoDirecta) return;
 
     setSubiendoFotoId(pizzaParaFotoDirecta.id);
@@ -605,11 +625,15 @@ export function EspecialidadesAdmin({
                       onChange={(e) => setQuitarFondoModal(e.target.checked)}
                       className="w-3.5 h-3.5 rounded border-white/20 text-emerald-500"
                     />
-                    <span>Quitar fondo automático</span>
+                    <span>Quitar fondo (Solo para ingredientes aislados)</span>
                   </label>
                 </div>
+                <p className="text-[10px] text-slate-400">
+                  💡 Para fotos de la pizza entera (en caja o plato), mantené la casilla de quitar fondo <strong>desmarcada</strong> para que la foto se vea completa.
+                </p>
 
                 <input
+                  ref={modalFileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleSubirFoto(e, false)}
@@ -620,6 +644,22 @@ export function EspecialidadesAdmin({
                   <p className="text-xs text-emerald-400 font-bold animate-pulse">
                     Optimizando y subiendo foto de la pizza...
                   </p>
+                )}
+
+                {errorSubidaFoto && (
+                  <div className="p-2.5 rounded-xl bg-red-500/20 border border-red-500/40 text-red-200 text-xs flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span>⚠️</span>
+                      <span>{errorSubidaFoto}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setErrorSubidaFoto(null)}
+                      className="text-red-400 hover:text-white font-bold ml-2 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 )}
 
                 {formImagen && (formImagen.startsWith("/") || formImagen.startsWith("http")) && (
@@ -639,7 +679,11 @@ export function EspecialidadesAdmin({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setFormImagen("🍕")}
+                      onClick={() => {
+                        setFormImagen("🍕");
+                        setErrorSubidaFoto(null);
+                        if (modalFileInputRef.current) modalFileInputRef.current.value = "";
+                      }}
                       className="text-[10px] text-red-300 hover:text-white bg-red-500/20 hover:bg-red-500/40 border border-red-500/40 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0"
                     >
                       Quitar foto

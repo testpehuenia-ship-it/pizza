@@ -13,12 +13,27 @@ export async function removeBackgroundAndOptimize(
   inputBuffer: Buffer,
   options: ImageProcessingOptions = {}
 ): Promise<{ buffer: Buffer; info: OutputInfo }> {
-  const { maxDimension = 700, tolerance = 42, removeBg = true } = options;
+  const { maxDimension = 800, tolerance = 42, removeBg = false } = options;
 
-  let imgInstance = sharp(inputBuffer);
+  // Si no se requiere quitar el fondo (caso habitual para pizzas completas en caja o plato):
+  // Optimizamos directamente con Sharp: auto-rotación EXIF, redimensionado limpio y formato WebP/PNG
+  if (!removeBg) {
+    const { data: outputBuffer, info: outputInfo } = await sharp(inputBuffer)
+      .rotate() // Auto-orienta según orientación de la cámara de celular
+      .resize(maxDimension, maxDimension, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 88 })
+      .toBuffer({ resolveWithObject: true });
+
+    return { buffer: outputBuffer, info: outputInfo };
+  }
+
+  let imgInstance = sharp(inputBuffer).rotate();
   const meta = await imgInstance.metadata();
 
-  // Aseguramos que tenga canal alfa (RGBA)
+  // Aseguramos que tenga canal alfa (RGBA) para el recorte de fondo
   const { data, info } = await imgInstance
     .ensureAlpha()
     .raw()

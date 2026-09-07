@@ -9,17 +9,40 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const removeBgParam = formData.get("removeBg");
-    const removeBg = removeBgParam !== "false"; // por defecto true
+    const removeBg = removeBgParam === "true"; // Por defecto false (preserva foto completa de la pizza)
 
     if (!file) {
       return NextResponse.json({ error: "No se proporcionó ningún archivo" }, { status: 400 });
     }
 
-    // Validación de seguridad: Limitar a tipos MIME de imagen permitidos
-    const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif"];
-    if (!allowedMimeTypes.includes(file.type.toLowerCase())) {
+    // Validación de seguridad: Comprobar tipo MIME y extensión de archivo
+    const allowedMimeTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/pjpeg",
+      "image/jfif",
+      "image/png",
+      "image/x-png",
+      "image/webp",
+      "image/avif",
+      "image/heic",
+      "image/heif",
+    ];
+    const nombreArchivo = file.name || "";
+    const ext = nombreArchivo.split(".").pop()?.toLowerCase() || "";
+    const validExtensions = ["jpg", "jpeg", "png", "webp", "avif", "heic", "heif"];
+    const fileMime = (file.type || "").toLowerCase();
+
+    const esMimeValido =
+      allowedMimeTypes.includes(fileMime) ||
+      fileMime.startsWith("image/") ||
+      fileMime === "application/octet-stream" ||
+      !fileMime;
+    const esExtValida = validExtensions.includes(ext);
+
+    if (!esMimeValido && !esExtValida) {
       return NextResponse.json(
-        { error: "Formato no permitido. Solo se admiten imágenes PNG, JPEG, WebP o AVIF." },
+        { error: `Formato de imagen no soportado (${fileMime || ext}). Solo se admiten archivos JPG, PNG, WebP o AVIF.` },
         { status: 415 }
       );
     }

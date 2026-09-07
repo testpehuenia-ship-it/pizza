@@ -86,7 +86,7 @@ export default function AdminDashboardPage() {
     <div className="min-h-screen bg-[#0d141e] text-slate-100 pb-24 select-none">
       {/* Toast flotante de notificación */}
       {notificacion && (
-        <div className="fixed top-4 right-4 z-50 animate-bounce">
+        <div className="fixed top-4 right-4 z-[9999] animate-bounce">
           <div
             className={`px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2 border ${
               notificacion.tipo === "error"

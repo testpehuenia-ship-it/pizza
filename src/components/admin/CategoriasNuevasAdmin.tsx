@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { CategoriaConfig, IngredienteCatalogItem } from "@/lib/catalog-db";
+import { subirImagenAlServidor } from "@/lib/client-image";
 
 interface CategoriasNuevasAdminProps {
   categorias: CategoriaConfig[];
@@ -64,18 +65,11 @@ export function CategoriasNuevasAdmin({
   const handleSubirFotoBase = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("removeBg", "true");
+    e.target.value = "";
 
     setSubiendoFoto(true);
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al subir imagen");
+      const data = await subirImagenAlServidor(file, { removeBg: true, maxDimension: 1200 });
       setFormBaseImagen(data.url);
       onMostrarNotificacion("Foto del producto base optimizada con fondo transparente.", "exito");
     } catch (err: any) {

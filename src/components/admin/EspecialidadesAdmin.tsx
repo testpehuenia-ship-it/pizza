@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { PizzaDataType, IngredienteCatalogItem } from "@/lib/catalog-db";
+import { subirImagenAlServidor } from "@/lib/client-image";
 
 interface EspecialidadesAdminProps {
   pizzas: PizzaDataType[];
@@ -102,12 +103,10 @@ export function EspecialidadesAdmin({
     else setSubiendoFoto(true);
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const data = await subirImagenAlServidor(file, {
+        removeBg: esIngrediente ? true : quitarFondoModal,
+        maxDimension: 1400,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al procesar la imagen");
 
       if (esIngrediente) {
         setNuevoIngFotoUrl(data.url);
@@ -133,20 +132,14 @@ export function EspecialidadesAdmin({
 
     e.target.value = "";
     if (fileInputDirectoRef.current) fileInputDirectoRef.current.value = "";
-    if (!file || !pizzaParaFotoDirecta) return;
 
     setSubiendoFotoId(pizzaParaFotoDirecta.id);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("removeBg", "false"); // Mantener la foto completa de la pizza (en caja o tabla)
 
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
+      const data = await subirImagenAlServidor(file, {
+        removeBg: false, // Mantener la foto completa de la pizza (en caja o tabla)
+        maxDimension: 1400,
       });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error(data.error || "Error al subir la imagen");
 
       const payload: PizzaDataType = {
         ...pizzaParaFotoDirecta,

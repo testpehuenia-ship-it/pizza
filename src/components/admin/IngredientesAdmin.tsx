@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { IngredienteCatalogItem, PizzaDataType, CategoriaConfig } from "@/lib/catalog-db";
+import { subirImagenAlServidor } from "@/lib/client-image";
 
 interface IngredientesAdminProps {
   ingredientes: IngredienteCatalogItem[];
@@ -58,18 +59,11 @@ export function IngredientesAdmin({
   const handleSubirFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0]) return;
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("removeBg", "true");
+    e.target.value = "";
 
     setSubiendoFoto(true);
     try {
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Error al subir imagen");
+      const data = await subirImagenAlServidor(file, { removeBg: true, maxDimension: 1000 });
       setFormImagenUrl(data.url);
       onMostrarNotificacion("Foto de ingrediente optimizada y con fondo transparente.", "exito");
     } catch (err: any) {

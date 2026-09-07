@@ -273,7 +273,15 @@ export function CarruselPizzas3D({
                     : "bg-white text-[#14532d] border border-emerald-200/80 hover:bg-emerald-50 hover:border-emerald-400 hover:scale-[1.01]"
                 }`}
               >
-                <span>🍕</span>
+                {p.imagen && (p.imagen.startsWith("/") || p.imagen.startsWith("http")) ? (
+                  <img
+                    src={p.imagen}
+                    alt={p.nombre}
+                    className="w-5 h-5 rounded-md object-cover shrink-0 border border-emerald-300 shadow-xs"
+                  />
+                ) : (
+                  <span>{p.imagen || "🍕"}</span>
+                )}
                 <span>{p.nombre}</span>
               </button>
             );

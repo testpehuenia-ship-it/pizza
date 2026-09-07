@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { PizzaDataType, IngredienteCatalogItem } from "@/lib/catalog-db";
 
 interface EspecialidadesAdminProps {
@@ -20,6 +20,12 @@ export function EspecialidadesAdmin({
   const [modalAbierto, setModalAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [quitarFondoModal, setQuitarFondoModal] = useState(false);
+
+  // Subida de foto directa desde la tarjeta de la lista
+  const fileInputDirectoRef = useRef<HTMLInputElement>(null);
+  const [pizzaParaFotoDirecta, setPizzaParaFotoDirecta] = useState<PizzaDataType | null>(null);
+  const [subiendoFotoId, setSubiendoFotoId] = useState<string | null>(null);
 
   // Estado del formulario de edición / alta
   const [pizzaEditando, setPizzaEditando] = useState<PizzaDataType | null>(null);
@@ -76,7 +82,7 @@ export function EspecialidadesAdmin({
     const file = e.target.files[0];
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("removeBg", "true");
+    formData.append("removeBg", esIngrediente ? "true" : (quitarFondoModal ? "true" : "false"));
 
     if (esIngrediente) setSubiendoFotoIng(true);
     else setSubiendoFoto(true);
@@ -94,13 +100,55 @@ export function EspecialidadesAdmin({
         onMostrarNotificacion("Foto de ingrediente optimizada y con fondo transparente.", "exito");
       } else {
         setFormImagen(data.url);
-        onMostrarNotificacion("Foto de pizza optimizada con fondo transparente lista.", "exito");
+        onMostrarNotificacion("Foto de pizza cargada y optimizada con éxito.", "exito");
       }
     } catch (err: any) {
       onMostrarNotificacion(err.message, "error");
     } finally {
       if (esIngrediente) setSubiendoFotoIng(false);
       else setSubiendoFoto(false);
+    }
+  };
+
+  // Subida directa de foto para una pizza desde la lista sin abrir modal completo
+  const handleSubirFotoDirecta = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !pizzaParaFotoDirecta) return;
+
+    setSubiendoFotoId(pizzaParaFotoDirecta.id);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("removeBg", "false"); // Mantener la foto completa de la pizza (en caja o tabla)
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || "Error al subir la imagen");
+
+      const payload: PizzaDataType = {
+        ...pizzaParaFotoDirecta,
+        imagen: data.url,
+      };
+
+      const saveRes = await fetch("/api/catalog/pizzas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!saveRes.ok) throw new Error("Error al guardar la foto de la pizza");
+
+      onMostrarNotificacion(`¡Foto de "${pizzaParaFotoDirecta.nombre}" actualizada con éxito!`, "exito");
+      onRecargarCatalogo();
+    } catch (err: any) {
+      onMostrarNotificacion(err.message || "Error al cargar la foto", "error");
+    } finally {
+      setSubiendoFotoId(null);
+      setPizzaParaFotoDirecta(null);
+      if (fileInputDirectoRef.current) fileInputDirectoRef.current.value = "";
     }
   };
 
@@ -307,15 +355,39 @@ export function EspecialidadesAdmin({
           >
             {/* Columna 1: Nombre + Imagen lado a lado */}
             <div className="lg:col-span-4 flex items-center gap-3.5">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#0d141e] border border-emerald-500/30 flex items-center justify-center relative overflow-hidden flex-shrink-0 shadow-inner">
-                {pizza.imagen && pizza.imagen.startsWith("/") || pizza.imagen?.startsWith("http") ? (
-                  <img
-                    src={pizza.imagen}
-                    alt={pizza.nombre}
-                    className="w-full h-full object-contain p-1 filter drop-shadow"
-                  />
+              <div
+                onClick={() => {
+                  setPizzaParaFotoDirecta(pizza);
+                  fileInputDirectoRef.current?.click();
+                }}
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#0d141e] border-2 border-emerald-500/30 hover:border-emerald-400 flex items-center justify-center relative overflow-hidden flex-shrink-0 shadow-md group cursor-pointer transition-all hover:scale-105"
+                title="Hacé clic para cargar o cambiar la foto de esta pizza"
+              >
+                {subiendoFotoId === pizza.id ? (
+                  <div className="flex flex-col items-center justify-center text-center p-1">
+                    <span className="animate-spin text-lg">⏳</span>
+                    <span className="text-[8px] text-emerald-300 font-bold mt-1">Subiendo...</span>
+                  </div>
+                ) : pizza.imagen && (pizza.imagen.startsWith("/") || pizza.imagen.startsWith("http")) ? (
+                  <>
+                    <img
+                      src={pizza.imagen}
+                      alt={pizza.nombre}
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white font-bold transition-opacity">
+                      <span className="text-base">📸</span>
+                      <span>Cambiar</span>
+                    </div>
+                  </>
                 ) : (
-                  <span className="text-3xl sm:text-4xl">{pizza.imagen || "🍕"}</span>
+                  <>
+                    <span className="text-3xl sm:text-4xl">{pizza.imagen || "🍕"}</span>
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-white font-bold transition-opacity">
+                      <span className="text-base">📸</span>
+                      <span>Subir Foto</span>
+                    </div>
+                  </>
                 )}
               </div>
               <div className="min-w-0">
@@ -399,7 +471,19 @@ export function EspecialidadesAdmin({
                 <span>{pizza.oculto ? "🔴" : "🟢"}</span>
                 <span>{pizza.oculto ? "Oculto (Sin Stock)" : "Publicado"}</span>
               </button>
-              <div className="flex items-center gap-2 w-full">
+              <div className="flex items-center gap-1.5 w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPizzaParaFotoDirecta(pizza);
+                    fileInputDirectoRef.current?.click();
+                  }}
+                  className="bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold text-xs py-1.5 px-2 rounded-xl transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
+                  title="Cargar o cambiar foto desde archivo"
+                >
+                  <span>📸</span>
+                  <span className="hidden sm:inline">Foto</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => abrirModalEditar(pizza)}
@@ -507,32 +591,59 @@ export function EspecialidadesAdmin({
                 </div>
               </div>
 
-              {/* Subida de foto con remoción de fondo */}
-              <div className="bg-[#0d141e] border border-dashed border-emerald-500/40 rounded-2xl p-3 text-center">
-                <label className="block text-[11px] font-bold text-emerald-300 mb-1.5">
-                  📸 Foto de la Especialidad (Optimización y Fondo Transparente Automático)
-                </label>
+              {/* Subida de foto de la pizza */}
+              <div className="bg-[#0d141e] border border-dashed border-emerald-500/40 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="text-[11px] font-bold text-emerald-300 flex items-center gap-1.5">
+                    <span>📸</span>
+                    <span>Foto de la Pizza (Se mostrará en el menú del admin y de los clientes)</span>
+                  </label>
+                  <label className="text-[10px] text-slate-400 flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={quitarFondoModal}
+                      onChange={(e) => setQuitarFondoModal(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded border-white/20 text-emerald-500"
+                    />
+                    <span>Quitar fondo automático</span>
+                  </label>
+                </div>
+
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleSubirFoto(e, false)}
-                  className="text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer"
+                  className="text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer w-full"
                 />
+
                 {subiendoFoto && (
-                  <p className="text-xs text-emerald-400 mt-2 font-bold animate-pulse">
-                    Procesando y eliminando fondo con Sharp...
+                  <p className="text-xs text-emerald-400 font-bold animate-pulse">
+                    Optimizando y subiendo foto de la pizza...
                   </p>
                 )}
+
                 {formImagen && (formImagen.startsWith("/") || formImagen.startsWith("http")) && (
-                  <div className="mt-2.5 flex items-center justify-center gap-3">
+                  <div className="mt-2.5 flex items-center gap-3 bg-[#151f2e] border border-emerald-500/40 rounded-xl p-2.5">
                     <img
                       src={formImagen}
                       alt="Preview"
-                      className="w-14 h-14 object-contain rounded-xl border border-emerald-500 bg-[#151f2e] p-1"
+                      className="w-16 h-16 object-cover rounded-xl border border-emerald-400 shadow-md shrink-0"
                     />
-                    <span className="text-[11px] text-emerald-400 font-bold">
-                      Fondo transparente verificado
-                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] text-emerald-300 font-bold block">
+                        Foto asignada a esta especialidad
+                      </span>
+                      <span className="text-[10px] text-slate-400 truncate block">
+                        {formImagen}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormImagen("🍕")}
+                      className="text-[10px] text-red-300 hover:text-white bg-red-500/20 hover:bg-red-500/40 border border-red-500/40 px-2 py-1 rounded-lg transition-all cursor-pointer font-bold shrink-0"
+                    >
+                      Quitar foto
+                    </button>
                   </div>
                 )}
               </div>

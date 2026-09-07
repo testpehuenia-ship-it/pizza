@@ -61,8 +61,17 @@ export function ResumenCarrito() {
                 className="flex items-center justify-between p-3 rounded-2xl bg-[#f8fafc] border border-emerald-100"
               >
                 <div className="flex-1 pr-3">
-                  <div className="font-extrabold text-[#14532d] text-xs flex items-center gap-1.5">
-                    <span>🍕 {item.pizza.nombre}</span>
+                  <div className="font-extrabold text-[#14532d] text-xs flex items-center gap-2">
+                    {item.pizza.imagen && (item.pizza.imagen.startsWith("/") || item.pizza.imagen.startsWith("http")) ? (
+                      <img
+                        src={item.pizza.imagen}
+                        alt={item.pizza.nombre}
+                        className="w-6 h-6 rounded-lg object-cover shrink-0 border border-emerald-300 shadow-xs"
+                      />
+                    ) : (
+                      <span>{item.pizza.imagen || "🍕"}</span>
+                    )}
+                    <span>{item.pizza.nombre}</span>
                     <span className="text-[11px] font-normal text-[#15803d]">
                       ({item.tamaño} porciones)
                     </span>

@@ -211,7 +211,18 @@ export default function PedidoPage() {
               <div className="space-y-1.5 text-[#14532d] font-semibold">
                 {pizzas.map((p, i) => (
                   <div key={i} className="flex justify-between items-center">
-                    <span>🍕 {p.pizza?.nombre || "Pizza"} ({p.tamaño || "8"}p)</span>
+                    <div className="flex items-center gap-2 truncate">
+                      {p.pizza?.imagen && (p.pizza.imagen.startsWith("/") || p.pizza.imagen.startsWith("http")) ? (
+                        <img
+                          src={p.pizza.imagen}
+                          alt={p.pizza.nombre}
+                          className="w-5 h-5 rounded-md object-cover shrink-0 border border-emerald-300 shadow-xs"
+                        />
+                      ) : (
+                        <span>{p.pizza?.imagen || "🍕"}</span>
+                      )}
+                      <span>{p.pizza?.nombre || "Pizza"} ({p.tamaño || "8"}p)</span>
+                    </div>
                     <span className="font-mono font-bold">${(Number(p.precio) || 0).toLocaleString("es-AR")}</span>
                   </div>
                 ))}

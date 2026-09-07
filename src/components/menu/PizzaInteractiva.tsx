@@ -128,14 +128,18 @@ export function PizzaInteractiva({
     return list;
   }, [pizza, ingredientesAgregados]);
 
+  const tieneFotoReal = Boolean(
+    pizza.imagen && (pizza.imagen.startsWith("/") || pizza.imagen.startsWith("http"))
+  );
+
   return (
     <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto flex items-center justify-center select-none">
-      {/* Disco redondo de la pizza horneada sobre tabla artesanal de madera (sin biselados artificiales) */}
-      <div className="relative w-full h-full rounded-full overflow-hidden filter drop-shadow-[0_18px_32px_rgba(0,0,0,0.28)] flex items-center justify-center">
-        {/* Fotografía de la Pizza sobre tabla de madera */}
+      {/* Disco redondo de la pizza horneada sobre tabla artesanal o foto real cargada */}
+      <div className="relative w-full h-full rounded-full overflow-hidden filter drop-shadow-[0_18px_32px_rgba(0,0,0,0.28)] flex items-center justify-center bg-black/5">
+        {/* Fotografía de la Pizza: foto real de la variedad o base sobre madera */}
         <img
-          src="/images/pizzas/pizza_base_madera.png"
-          alt="Pizza 0600 Boston artesanal"
+          src={tieneFotoReal ? pizza.imagen : "/images/pizzas/pizza_base_madera.png"}
+          alt={pizza.nombre || "Pizza 0600 Boston artesanal"}
           className="w-full h-full object-cover rounded-full pointer-events-none"
         />
 
@@ -151,33 +155,35 @@ export function PizzaInteractiva({
           )}
         </div>
 
-        {/* Capa de Ingredientes con distribución inteligente anti-occlusión (mínimo 50% siempre visible) */}
-        <div className="absolute inset-0 pointer-events-none">
-          {toppingsRenderizables.map((item) => (
-            <div
-              key={item.key}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-ingredient-drop select-none transition-all duration-300 ease-out"
-              style={{
-                left: `${item.x.toFixed(2)}%`,
-                top: `${item.y.toFixed(2)}%`,
-                transform: `translate(-50%, -50%) rotate(${item.rot}deg) scale(${item.scale})`,
-                zIndex: item.zIndex,
-              }}
-            >
-              {item.imagenUrl ? (
-                <img
-                  src={item.imagenUrl}
-                  alt={item.nombre}
-                  className={`object-contain pointer-events-none filter drop-shadow-[0_5px_7px_rgba(0,0,0,0.55)] ${item.claseTamano}`}
-                />
-              ) : (
-                <span className="text-2xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]">
-                  {item.icono}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+        {/* Capa de Ingredientes interactivos (se muestra cuando no hay foto real cargada) */}
+        {!tieneFotoReal && (
+          <div className="absolute inset-0 pointer-events-none">
+            {toppingsRenderizables.map((item) => (
+              <div
+                key={item.key}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2 animate-ingredient-drop select-none transition-all duration-300 ease-out"
+                style={{
+                  left: `${item.x.toFixed(2)}%`,
+                  top: `${item.y.toFixed(2)}%`,
+                  transform: `translate(-50%, -50%) rotate(${item.rot}deg) scale(${item.scale})`,
+                  zIndex: item.zIndex,
+                }}
+              >
+                {item.imagenUrl ? (
+                  <img
+                    src={item.imagenUrl}
+                    alt={item.nombre}
+                    className={`object-contain pointer-events-none filter drop-shadow-[0_5px_7px_rgba(0,0,0,0.55)] ${item.claseTamano}`}
+                  />
+                ) : (
+                  <span className="text-2xl drop-shadow-[0_4px_6px_rgba(0,0,0,0.6)]">
+                    {item.icono}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

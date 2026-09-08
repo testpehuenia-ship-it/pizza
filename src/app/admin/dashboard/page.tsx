@@ -462,6 +462,12 @@ export default function AdminDashboardPage() {
             {tab === "configuracion" && (
               <ConfiguracionAdmin
                 usuarioActual={usuarioActual}
+                onUsuarioActualizado={(nuevoUser) => {
+                  setUsuarioActual(nuevoUser);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("adminCurrentUsername", nuevoUser);
+                  }
+                }}
                 onMostrarNotificacion={mostrarNotificacion}
               />
             )}

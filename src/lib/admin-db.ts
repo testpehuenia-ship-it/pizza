@@ -187,14 +187,16 @@ export async function cambiarPasswordAdmin(
         args: [nuevoPassword, u],
       });
       if (res.rowsAffected > 0) {
-        // También actualizar local
-        const usuarios = await leerArchivoLocal();
-        const idx = usuarios.findIndex((x) => x.usuario.toLowerCase() === u);
-        if (idx !== -1) {
-          usuarios[idx].password = nuevoPassword;
-          await guardarArchivoLocal(usuarios);
-        }
-        memoriaUsuariosAdmin = usuarios;
+        // También actualizar local en segundo plano si es posible
+        try {
+          const usuarios = await leerArchivoLocal();
+          const idx = usuarios.findIndex((x) => x.usuario.toLowerCase() === u);
+          if (idx !== -1) {
+            usuarios[idx].password = nuevoPassword;
+            await guardarArchivoLocal(usuarios);
+          }
+          memoriaUsuariosAdmin = usuarios;
+        } catch {}
         return true;
       }
     } catch (err) {
@@ -203,16 +205,93 @@ export async function cambiarPasswordAdmin(
   }
 
   // Fallback local
-  const usuarios = await leerArchivoLocal();
-  const idx = usuarios.findIndex((x) => x.usuario.toLowerCase() === u);
-  if (idx !== -1) {
-    usuarios[idx].password = nuevoPassword;
-    await guardarArchivoLocal(usuarios);
-    memoriaUsuariosAdmin = usuarios;
-    return true;
-  }
+  try {
+    const usuarios = await leerArchivoLocal();
+    const idx = usuarios.findIndex((x) => x.usuario.toLowerCase() === u);
+    if (idx !== -1) {
+      usuarios[idx].password = nuevoPassword;
+      await guardarArchivoLocal(usuarios);
+      memoriaUsuariosAdmin = usuarios;
+      return true;
+    }
+  } catch {}
 
   return false;
+}
+
+// Modificar usuario existente (nombre, login, rol y/o contraseña)
+export async function actualizarUsuarioAdmin(
+  id: string,
+  datos: {
+    usuario?: string;
+    nombre?: string;
+    rol?: "admin" | "operador";
+    password?: string;
+  }
+): Promise<{ exito: boolean; mensaje: string; usuario?: Omit<AdminUser, "password"> }> {
+  const db = getTursoClient();
+  const usuarios = await obtenerUsuariosAdminInterno();
+  const usuarioExistente = usuarios.find((x) => x.id === id);
+
+  if (!usuarioExistente) {
+    return { exito: false, mensaje: "Usuario no encontrado." };
+  }
+
+  const nuevoUsuario = datos.usuario ? datos.usuario.trim().toLowerCase() : usuarioExistente.usuario;
+  const nuevoNombre = datos.nombre ? datos.nombre.trim() : usuarioExistente.nombre;
+  const nuevoRol = datos.rol || usuarioExistente.rol;
+  const nuevoPassword = datos.password && datos.password.trim() ? datos.password.trim() : (usuarioExistente.password || "");
+
+  if (datos.password && datos.password.trim().length < 4) {
+    return { exito: false, mensaje: "La nueva contraseña debe tener al menos 4 caracteres." };
+  }
+
+  if (nuevoUsuario !== usuarioExistente.usuario) {
+    if (usuarios.some((x) => x.id !== id && x.usuario.toLowerCase() === nuevoUsuario)) {
+      return { exito: false, mensaje: `El nombre de usuario "${nuevoUsuario}" ya está en uso.` };
+    }
+  }
+
+  if (db) {
+    await inicializarTablaAdmin();
+    try {
+      await db.execute({
+        sql: "UPDATE admin_usuarios SET usuario = ?, nombre = ?, rol = ?, password = ? WHERE id = ?",
+        args: [nuevoUsuario, nuevoNombre, nuevoRol, nuevoPassword, id],
+      });
+    } catch (err) {
+      console.error("Error al actualizar usuario en Turso:", err);
+    }
+  }
+
+  // Actualizar en archivo local / memoria
+  try {
+    const localList = await leerArchivoLocal();
+    const localIdx = localList.findIndex((x) => x.id === id);
+    if (localIdx !== -1) {
+      localList[localIdx] = {
+        ...localList[localIdx],
+        usuario: nuevoUsuario,
+        nombre: nuevoNombre,
+        rol: nuevoRol,
+        password: nuevoPassword,
+      };
+      await guardarArchivoLocal(localList);
+    }
+    memoriaUsuariosAdmin = localList;
+  } catch {}
+
+  return {
+    exito: true,
+    mensaje: "Usuario y credenciales actualizados con éxito.",
+    usuario: {
+      id,
+      usuario: nuevoUsuario,
+      nombre: nuevoNombre,
+      rol: nuevoRol,
+      created_at: usuarioExistente.created_at,
+    },
+  };
 }
 
 // Crear nuevo usuario administrador u operador

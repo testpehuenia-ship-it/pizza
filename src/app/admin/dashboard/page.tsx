@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CatalogData, getInitialCatalogData } from "@/lib/catalog-db";
 import { EspecialidadesAdmin } from "@/components/admin/EspecialidadesAdmin";
 import { BebidasAdmin } from "@/components/admin/BebidasAdmin";
@@ -10,6 +11,7 @@ import { CombosAdmin } from "@/components/admin/CombosAdmin";
 import { CategoriasNuevasAdmin } from "@/components/admin/CategoriasNuevasAdmin";
 import { OptimizadorImagenesAdmin } from "@/components/admin/OptimizadorImagenesAdmin";
 import { PushAdmin } from "@/components/admin/PushAdmin";
+import { ConfiguracionAdmin } from "@/components/admin/ConfiguracionAdmin";
 
 interface ClienteItem {
   id: string;
@@ -23,9 +25,11 @@ interface ClienteItem {
 }
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<
-    "pizzas" | "bebidas" | "ingredientes" | "combos" | "categorias" | "optimizador" | "push" | "clientes"
+    "pizzas" | "bebidas" | "ingredientes" | "combos" | "categorias" | "optimizador" | "push" | "clientes" | "configuracion"
   >("pizzas");
+  const [usuarioActual, setUsuarioActual] = useState("admin");
 
   const [catalog, setCatalog] = useState<CatalogData | null>(null);
   const [cargandoCatalogo, setCargandoCatalogo] = useState(true);
@@ -77,10 +81,28 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("adminAuth0600");
+      localStorage.removeItem("adminCurrentUser");
+      localStorage.removeItem("adminCurrentUsername");
+    }
+    router.push("/admin");
+  };
+
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const auth = localStorage.getItem("adminAuth0600");
+      if (!auth) {
+        router.push("/admin");
+        return;
+      }
+      const username = localStorage.getItem("adminCurrentUsername");
+      if (username) setUsuarioActual(username);
+    }
     cargarCatalogo();
     cargarClientes();
-  }, []);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-[#0d141e] text-slate-100 pb-24 select-none">
@@ -236,6 +258,19 @@ export default function AdminDashboardPage() {
               <span>Clientes ({clientes.length})</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => setTab("configuracion")}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                tab === "configuracion"
+                  ? "bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/20"
+                  : "bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20"
+              }`}
+            >
+              <span>⚙️</span>
+              <span>Ajustes & WhatsApp</span>
+            </button>
+
             <Link
               href="/menu"
               className="ml-2 text-xs bg-emerald-700/60 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl transition-all font-bold flex items-center gap-1 shadow-sm"
@@ -243,6 +278,16 @@ export default function AdminDashboardPage() {
               <span>Ver Carta</span>
               <span>→</span>
             </Link>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="ml-1 text-xs bg-rose-950/60 hover:bg-rose-900 border border-rose-500/30 text-rose-300 px-3 py-1.5 rounded-xl transition-all font-bold flex items-center gap-1 shadow-sm cursor-pointer"
+              title="Cerrar sesión de administración"
+            >
+              <span>🚪</span>
+              <span>Salir</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -411,6 +456,14 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
               </div>
+            )}
+
+            {/* PESTAÑA 9: AJUSTES, CONTRASEÑA, USUARIOS & WHATSAPP */}
+            {tab === "configuracion" && (
+              <ConfiguracionAdmin
+                usuarioActual={usuarioActual}
+                onMostrarNotificacion={mostrarNotificacion}
+              />
             )}
           </>
         )}

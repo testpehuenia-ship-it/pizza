@@ -14,7 +14,8 @@ export function generarMensajeWhatsApp(
     calleAprox?: string;
     nota?: string;
   } | null,
-  combos?: ItemCarritoCombo[]
+  combos?: ItemCarritoCombo[],
+  telefonoDestino?: string
 ): string {
   let msg = `🍕 *PEDIDO - 0600BOSTON*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -89,5 +90,12 @@ export function generarMensajeWhatsApp(
   msg += `💰 *TOTAL A PAGAR:* $${numTotal.toLocaleString("es-AR")}\n\n`;
   msg += `_Aguardo confirmación de demora estimada._`;
 
-  return `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(msg)}`;
+  const rawTel = (telefonoDestino || WHATSAPP_NUMERO).replace(/\D/g, "");
+  const telFinal = rawTel.startsWith("549")
+    ? rawTel
+    : rawTel.startsWith("54")
+    ? `549${rawTel.slice(2)}`
+    : `549${rawTel.replace(/^0+/, "")}`;
+
+  return `https://wa.me/${telFinal}?text=${encodeURIComponent(msg)}`;
 }

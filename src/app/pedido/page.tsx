@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTiendaStore } from "@/lib/store";
 import { generarMensajeWhatsApp } from "@/lib/whatsapp";
@@ -37,7 +37,20 @@ export default function PedidoPage() {
   const [gpsCargando, setGpsCargando] = useState(false);
   const [gpsError, setGpsError] = useState("");
   const [confirmado, setConfirmado] = useState(false);
+  const [telefonoWhatsappDestino, setTelefonoWhatsappDestino] = useState("");
   const total = calcularTotal();
+
+  // Cargar número dinámico de WhatsApp configurado por el admin
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings?.whatsappNumeroWaMe) {
+          setTelefonoWhatsappDestino(data.settings.whatsappNumeroWaMe);
+        }
+      })
+      .catch((err) => console.error("Error al obtener teléfono de WhatsApp:", err));
+  }, []);
 
   const handleObtenerGps = () => {
     if (!navigator.geolocation) {
@@ -125,7 +138,8 @@ export default function PedidoPage() {
       domicilio,
       total,
       modoDireccion === "gps" && gpsData ? { ...gpsData, nota: notaEntrega } : null,
-      combos
+      combos,
+      telefonoWhatsappDestino || undefined
     );
 
     // 1. Abrir WhatsApp en pestaña / aplicación

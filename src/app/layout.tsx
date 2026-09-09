@@ -45,8 +45,8 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
+      { url: "/images/BrunoAgradece02.webp", type: "image/webp" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" },
-      { url: "/images/brunodescarga.webp", type: "image/webp" },
     ],
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
@@ -63,29 +63,29 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://www.0600boston.com.ar/images/og-image.jpg",
-        secureUrl: "https://www.0600boston.com.ar/images/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "0600Boston - Gran Variedad de Pizzas Artesanales",
-        type: "image/jpeg",
-      },
-      {
-        url: "https://www.0600boston.com.ar/images/og-square.jpg",
-        secureUrl: "https://www.0600boston.com.ar/images/og-square.jpg",
+        url: "https://www.0600boston.com.ar/images/BrunoAgradece02.webp",
+        secureUrl: "https://www.0600boston.com.ar/images/BrunoAgradece02.webp",
         width: 800,
         height: 800,
-        alt: "0600Boston - Gran Variedad de Pizzas Artesanales",
-        type: "image/jpeg",
+        alt: "0600Boston - Pizzería Artesanal",
+        type: "image/webp",
+      },
+      {
+        url: "https://www.0600boston.com.ar/images/BrunoAgradece02.png",
+        secureUrl: "https://www.0600boston.com.ar/images/BrunoAgradece02.png",
+        width: 800,
+        height: 800,
+        alt: "0600Boston - Pizzería Artesanal",
+        type: "image/png",
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "0600Boston | La Mejor Pizza Artesanal",
     description:
       "Gran Variedad de pizzas Artesanales con carrusel interactivo y pedidos directos por WhatsApp.",
-    images: ["https://www.0600boston.com.ar/images/og-image.jpg"],
+    images: ["https://www.0600boston.com.ar/images/BrunoAgradece02.webp"],
   },
   other: {
     "geo.region": "AR-B",
@@ -102,7 +102,7 @@ const schemaJsonLd = {
   "@context": "https://schema.org",
   "@type": "FastFoodRestaurant",
   name: "0600Boston - Pizzería Artesanal",
-  image: "https://www.0600boston.com.ar/images/og-image.jpg",
+  image: "https://www.0600boston.com.ar/images/BrunoAgradece02.webp",
   "@id": "https://www.0600boston.com.ar",
   url: "https://www.0600boston.com.ar",
   telephone: "+54 9 11 0000-0000",

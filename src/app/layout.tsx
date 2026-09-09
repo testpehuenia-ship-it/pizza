@@ -14,9 +14,9 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "0600Boston | La Mejor Pizza Artesanal",
   description:
-    "Pizzería artesanal 0600Boston: masa madre horneada a la leña, carrusel 3D interactivo con toppings en tiempo real, combos exclusivos y pedidos directos por WhatsApp.",
+    "Pizzería artesanal 0600Boston: Gran Variedad de pizzas Artesanales, masa madre, carrusel 3D interactivo con toppings en tiempo real, combos exclusivos y pedidos directos por WhatsApp.",
   manifest: "/manifest.json",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://pizza.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://www.0600boston.com.ar"),
   alternates: {
     canonical: "/",
   },
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     "0600boston",
     "pizza artesanal",
     "delivery pizza buenos aires",
-    "pizza a la leña",
+    "gran variedad de pizzas",
     "pedir pizza whatsapp",
     "combos pizza",
     "pizza napolitana",
@@ -43,23 +43,40 @@ export const metadata: Metadata = {
     title: "0600Boston",
   },
   icons: {
-    icon: "/images/brunodescarga.webp",
-    apple: "/images/brunodescarga.webp",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+      { url: "/images/brunodescarga.webp", type: "image/webp" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
   },
   openGraph: {
     title: "0600Boston | La Mejor Pizza Artesanal",
     description:
-      "Pizzas artesanales horneadas a la leña. Armá tu pizza con topping interactivo y pedí al instante por WhatsApp.",
-    url: "https://pizza.vercel.app",
+      "Gran Variedad de pizzas Artesanales. Armá tu pizza con topping interactivo y pedí al instante por WhatsApp.",
+    url: "https://www.0600boston.com.ar",
     siteName: "0600Boston",
     locale: "es_AR",
     type: "website",
     images: [
       {
-        url: "/images/pizzas/pizza_base_madera.png",
+        url: "https://www.0600boston.com.ar/images/og-image.jpg",
+        secureUrl: "https://www.0600boston.com.ar/images/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "0600Boston - Gran Variedad de Pizzas Artesanales",
+        type: "image/jpeg",
+      },
+      {
+        url: "https://www.0600boston.com.ar/images/og-square.jpg",
+        secureUrl: "https://www.0600boston.com.ar/images/og-square.jpg",
         width: 800,
         height: 800,
-        alt: "Pizza Artesanal 0600Boston",
+        alt: "0600Boston - Gran Variedad de Pizzas Artesanales",
+        type: "image/jpeg",
       },
     ],
   },
@@ -67,8 +84,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "0600Boston | La Mejor Pizza Artesanal",
     description:
-      "Pizzas artesanales horneadas a la leña con carrusel interactivo y pedidos directos por WhatsApp.",
-    images: ["/images/pizzas/pizza_base_madera.png"],
+      "Gran Variedad de pizzas Artesanales con carrusel interactivo y pedidos directos por WhatsApp.",
+    images: ["https://www.0600boston.com.ar/images/og-image.jpg"],
   },
   other: {
     "geo.region": "AR-B",
@@ -85,9 +102,9 @@ const schemaJsonLd = {
   "@context": "https://schema.org",
   "@type": "FastFoodRestaurant",
   name: "0600Boston - Pizzería Artesanal",
-  image: "https://pizza.vercel.app/images/pizzas/pizza_base_madera.png",
-  "@id": "https://pizza.vercel.app",
-  url: "https://pizza.vercel.app",
+  image: "https://www.0600boston.com.ar/images/og-image.jpg",
+  "@id": "https://www.0600boston.com.ar",
+  url: "https://www.0600boston.com.ar",
   telephone: "+54 9 11 0000-0000",
   priceRange: "$$",
   servesCuisine: ["Pizza", "Pizzería Artesanal", "Comida Rápida", "Bebidas"],
@@ -111,8 +128,8 @@ const schemaJsonLd = {
       closes: "23:59",
     },
   ],
-  menu: "https://pizza.vercel.app/menu",
-  hasMenu: "https://pizza.vercel.app/menu",
+  menu: "https://www.0600boston.com.ar/menu",
+  hasMenu: "https://www.0600boston.com.ar/menu",
   acceptsReservations: "False",
 };
 

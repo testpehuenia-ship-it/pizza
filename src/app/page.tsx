@@ -178,7 +178,7 @@ export default function HomePage() {
                 0600<span className="text-emerald-400">Boston</span>
               </h1>
               <p className="text-xs text-white/90 drop-shadow-md font-semibold mt-1">
-                Pizzas artesanales horneadas a la leña
+                Gran Variedad de pizzas Artesanales
               </p>
             </div>
 

@@ -10,9 +10,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { salirYCerrarApp } from "@/lib/cerrar-app";
 import FooterLegal from "@/components/layout/FooterLegal";
+import { useHorarioTienda } from "@/hooks/useHorarioTienda";
+import { EstadoHorarioBadge } from "@/components/horarios/EstadoHorarioBadge";
+import { AlertaLocalCerrado } from "@/components/horarios/AlertaLocalCerrado";
 
 export default function MenuPage() {
   const router = useRouter();
+  const { estado, horariosConfig, estaAbierto } = useHorarioTienda();
   const {
     cliente,
     pizzas,
@@ -122,16 +126,16 @@ export default function MenuPage() {
       )}
 
       {/* Barra Superior Mobile */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 px-4 py-3 shadow-sm">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-1.5">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-1.5">
+          <Link href="/" className="flex items-center gap-1.5 shrink-0">
             <span className="text-xl">🍀</span>
-            <span className="font-black text-lg text-[#14532d] tracking-tight">
+            <span className="font-black text-base sm:text-lg text-[#14532d] tracking-tight">
               0600<span className="text-[#15803d]">Boston</span>
             </span>
           </Link>
 
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {/* Notificaciones Push */}
             <button
               type="button"
@@ -145,15 +149,15 @@ export default function MenuPage() {
             {/* Acceso a Bebidas */}
             <Link
               href="/bebidas"
-              className="text-xs font-bold text-[#15803d] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1.5 rounded-xl transition-all"
+              className="text-xs font-bold text-[#15803d] bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1.5 rounded-xl transition-all whitespace-nowrap"
             >
-              🥤 Bebidas
+              🥤 <span className="hidden xs:inline">Bebidas</span>
             </Link>
 
             {/* Carrito Flotante */}
             <Link
               href="/carrito"
-              className="flex items-center gap-1.5 bg-[#15803d] text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 active:scale-95 transition-all"
+              className="flex items-center gap-1.5 bg-[#15803d] text-white px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-700/20 active:scale-95 transition-all"
             >
               <span>🛒</span>
               <span>{totalItems}</span>
@@ -176,6 +180,24 @@ export default function MenuPage() {
 
       {/* Main Container Mobile */}
       <main className="max-w-md mx-auto px-4 pt-3">
+        {/* Banner de Estado de Horario en Cabecera de Menú */}
+        <div className="flex items-center justify-between mb-3 px-0.5">
+          <EstadoHorarioBadge theme="light" />
+          <span className="text-[11px] text-[#4b6b55] font-semibold">
+            {estado.estaAbierto ? "🟢 Pedidos habilitados" : "🛑 Pedidos pausados"}
+          </span>
+        </div>
+
+        {/* Alerta Destacada si el local está cerrado */}
+        {!estaAbierto && (
+          <AlertaLocalCerrado
+            estado={estado}
+            config={horariosConfig}
+            theme="light"
+            className="mb-4"
+          />
+        )}
+
         {/* Selector de Sección: Pizzas vs Combos */}
         <div className="flex bg-emerald-100/70 p-1 rounded-2xl mb-4">
           <button

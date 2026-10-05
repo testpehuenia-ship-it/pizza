@@ -6,6 +6,7 @@ import BackgroundVideo from "@/components/landing/BackgroundVideo";
 import { useTiendaStore } from "@/lib/store";
 import { salirYCerrarApp } from "@/lib/cerrar-app";
 import FooterLegal from "@/components/layout/FooterLegal";
+import { EstadoHorarioBadge } from "@/components/horarios/EstadoHorarioBadge";
 
 export default function HomePage() {
   const router = useRouter();
@@ -111,7 +112,7 @@ export default function HomePage() {
       <BackgroundVideo />
 
       {/* Header Superior Translúcido */}
-      <header className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between pt-2">
+      <header className="relative z-10 w-full max-w-md mx-auto flex items-center justify-between gap-2 pt-2">
         <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-emerald-500/40">
           <span className="text-base">🍀</span>
           <span className="text-xs font-black text-white tracking-wide uppercase">
@@ -119,15 +120,19 @@ export default function HomePage() {
           </span>
         </div>
 
-        {cliente && modo === "inicio" && (
-          <button
-            onClick={() => salirYCerrarApp()}
-            className="text-xs font-black text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-500 px-4 py-1.5 rounded-full border border-red-300/40 shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <span>🚪</span>
-            <span>Salir</span>
-          </button>
-        )}
+        <div className="flex items-center gap-1.5">
+          <EstadoHorarioBadge theme="dark" />
+
+          {cliente && modo === "inicio" && (
+            <button
+              onClick={() => salirYCerrarApp()}
+              className="text-xs font-black text-white bg-gradient-to-r from-red-600 via-rose-600 to-red-500 px-3.5 py-1.5 rounded-full border border-red-300/40 shadow-[0_0_15px_rgba(225,29,72,0.4)] hover:brightness-110 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <span>🚪</span>
+              <span className="hidden sm:inline">Salir</span>
+            </button>
+          )}
+        </div>
       </header>
 
       {/* ÁREA CENTRAL / INFERIOR */}

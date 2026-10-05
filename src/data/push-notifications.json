@@ -1,0 +1,153 @@
+{
+  "historial": [
+    {
+      "id": "push_1788752819720_k29k",
+      "fecha": "2026-09-07T03:46:59.720Z",
+      "estado": "enviada",
+      "titulo": "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+      "mensaje": "Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas artesanales y promos con descuento para vos hoy.",
+      "url": "/menu",
+      "icono": "🍀",
+      "destinatarios": "Todos los Clientes"
+    },
+    {
+      "id": "push_1788734935730_1pqe",
+      "fecha": "2026-09-06T22:48:55.730Z",
+      "estado": "enviada",
+      "titulo": "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+      "mensaje": "Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas artesanales y promos con descuento para vos hoy.",
+      "url": "/menu",
+      "icono": "🍀",
+      "destinatarios": "Todos los Clientes"
+    },
+    {
+      "id": "push_1788734727457_1og4",
+      "fecha": "2026-09-06T22:45:27.457Z",
+      "estado": "enviada",
+      "titulo": "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+      "mensaje": "Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas artesanales y promos con descuento para vos hoy.",
+      "url": "/menu",
+      "icono": "🍀",
+      "destinatarios": "Todos los Clientes"
+    }
+  ],
+  "suscripciones": [
+    {
+      "id": "sub_1788734626506_cn3z",
+      "endpoint": "https://web.push.apple.com/QD6ukX26HJJP7Ivtu-srK7VuARmAqvrE12lc_vreq1XaVrhuCaa-bW542fI1pTvZS1eNQSb6turHH5yfVLy1_xI_izIx69CBatbYMvx7Ar9mplDnEbzogc0GZmY0_401JYaOyRrBJ_-1zeoUNF9paHnDzu0lFXEN3fE5PKN5da8",
+      "keys": {
+        "p256dh": "BMw-k9HeoRfMmEAPz8-REF2d4o86akK6yRGZwH1G3I8qAEryU2Z_uT-LKMs5XIngTKSUERx9HvKR73JOpfHWefc",
+        "auth": "3UiF4lczFfpO2pZzGecRCQ"
+      },
+      "created_at": "2026-09-11T23:29:40.233Z",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+      "clienteNombre": "Bruno Gonzalez",
+      "clienteUsuario": "bruno gonzalez",
+      "clienteTelefono": "2995334606"
+    },
+    {
+      "id": "sub_1788752818123_90rf",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/d8i-FGq3Tto:APA91bG0tWQ1gJiTbFo7jjmvnhO7hoZHm_ysbTW3Pe5fKBxQTCUOX0LZ43ElafkyaOZ5-RkcGFXapJAQefo_QcPlfb8G82aFxyStPpXgYxrNY52czyN4my7kgY4CPfsWNSdqalETpyPe",
+      "keys": {
+        "p256dh": "BGHx-aCXS2r3eSvYaqK3aPgiyOA4CoMU_4NhgaWfUsKLmjznjQj1Eu60BWXK3i7fuCwaOkdMAJwxj9zdXNk8fVk",
+        "auth": "5VMqBolp-zXHnALCbMYfmA"
+      },
+      "created_at": "2026-09-16T04:11:32.567Z",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+      "clienteNombre": "Gustavo Bobadilla",
+      "clienteUsuario": "gus1622",
+      "clienteTelefono": "02942661000"
+    },
+    {
+      "id": "sub_1788789298168_oofu",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/c13VP_MvaXY:APA91bE6QbmizgsWzT8pxcJDGWMaac6cGtWShKOC_N-s5sXwk9dok6tO7DKIVKb9PFLxOG_-2UV3RhZj3daOAFqWeZLlmg9uJICl3VV8AE-dkehUH136BGOYA3qDNXLEeF-7mDB_ittN",
+      "keys": {
+        "p256dh": "BGB4H2J5ErApG5uW1Vo8LNFAnS_Qz6oQS1kHe-OGmvLUvopIIhcVfwX5ftJ0UO3sGUm4B82paTPszVMIL1Y_dOg",
+        "auth": "_BUp9vKi1tCdsdWS1iLoLw"
+      },
+      "created_at": "2026-09-08T10:48:31.906Z",
+      "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+      "clienteNombre": "Gustavo Bobadilla",
+      "clienteUsuario": "gus1622",
+      "clienteTelefono": "02942661000"
+    },
+    {
+      "id": "sub_1788863009238_radi",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/dLMafY7IrN8:APA91bGFWBq1VXI0D1PmT4QA3QN_TYg_kj9FqkQfrLR-lWTTTCFYRHohxW9wMvLUs5VP1sdexjS66b1AMNL8ym3bssHnVMR04sfP4LJIeML3qrf6APYM9J1WBVneLz5nrMoESdGY1pxz",
+      "keys": {
+        "p256dh": "BJPmdZRhoyfkZ90NjThOe_WKf-iYkrQHZOdG6pJimV5BZGK9jgZWoiI70-IseZxdNi8FKT2QHRVrqtNvyHchwpo",
+        "auth": "TTUcv0il16RvI8wRs59FIw"
+      },
+      "created_at": "2026-09-08T12:36:37.213Z",
+      "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36"
+    },
+    {
+      "id": "sub_1788882833055_ogms",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/dvEXGRm_hH0:APA91bGCLPYUVeYGFekv4R5plJonBf12cPOWHHKL6-Nb2u0cx4hcY_72Fx317ZLzWhfUqpnPTT_4STc_fIdO8bFLvBtIIovcYcfwJc1biJy3GxCFV7A-4gtYkMbUJyNHseerrJZaBxuX",
+      "keys": {
+        "p256dh": "BGmOAeMoTaY22owek1KhY6K9fVc-2UML2D8pI0UjrJZJUW4OGcXqysVh9EwK8nU5Icuvmrri3VTvJsimaQJM3sY",
+        "auth": "CAoM6RWGWj7NpaHPBaiIFQ"
+      },
+      "created_at": "2026-10-04T03:54:53.161Z",
+      "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+      "clienteNombre": "Gustavo Bobadilla",
+      "clienteUsuario": "gus1622",
+      "clienteTelefono": "02942661000"
+    },
+    {
+      "id": "sub_1789068445950_56nl",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/cEXI_1MSqKk:APA91bEScSeIR5U6wacyV-e3813rTz5F1V27nWlPd9eb1r_RJwWeOUXnqViFCrxhZTzlaDxpQzuXkEr_PXujIjGW0MKGGoSUBZZNwUb3k3w2qWBlY-7oNRudboQ83N4cr0q88dkNM7DG",
+      "keys": {
+        "p256dh": "BKrsB_y4S7vyIqnh2QuhsENCJulFOGwLbz-5EY4o9UPXzHK02kG6KSxndDHGJPQMArBb30t67DdOMW35YSFhuXs",
+        "auth": "SLvgntLPA2SzTmJ95GYkOQ"
+      },
+      "created_at": "2026-10-01T17:46:25.603Z",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36 OPR/136.0.0.0",
+      "clienteNombre": "Bruno Gonzalez",
+      "clienteUsuario": "bruno gonzalez",
+      "clienteTelefono": "2995334606"
+    },
+    {
+      "id": "sub_1791158979576_n1cy",
+      "endpoint": "https://fcm.googleapis.com/fcm/send/ekMsKtVM3j8:APA91bFtQI6dQbyaR_XXutSf3_vva4q342c8-sqa2mdSv41mYHK22QW0IGO69MujKg07tw_QkPUrTGkrHxt3sbAwKtPUUOjddk2RGwOg1VRfB6_djDr20WYTNnnqhw0dIsTIqguZXhqP",
+      "keys": {
+        "p256dh": "BPsZrSVy391eNq0ajPc0wxkGMilc8q1wrfXjSphYEsqUTLLIoH6_3K1U9b1XB8vHR3GuWDmYqrVrcUu-GeF5wwI",
+        "auth": "KiRSvcUlWiTGjiGUBX276w"
+      },
+      "created_at": "2026-10-05T00:13:32.783Z",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
+    }
+  ],
+  "plantillas": [
+    {
+      "id": "tmpl_1788753009828_6rso",
+      "fechaCreacion": "2026-09-07T03:50:09.828Z",
+      "nombre": "¡Bienvenido a 0600Boston, {nombr...",
+      "titulo": "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+      "mensaje": "👋Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas🍕 y promos 🎁con descuento para vos hoy.🍀😋",
+      "url": "/menu",
+      "icono": "🍀",
+      "destinatarios": "Todos los Clientes"
+    },
+    {
+      "id": "tmpl_1788730239664_z6ul",
+      "fechaCreacion": "2026-09-06T21:30:39.664Z",
+      "nombre": "¡Bienvenido a 0600Boston, {nombr...",
+      "titulo": "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+      "mensaje": "Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas artesanales y promos con descuento para vos hoy.",
+      "url": "/menu",
+      "icono": "🍀",
+      "destinatarios": "Todos los Clientes"
+    },
+    {
+      "id": "tmpl_bienvenida_personalizada",
+      "nombre": "Bienvenida Personalizada {nombre}",
+      "titulo": "¡Bienvenido a 0600Boston, {nombre}! 🍕🍀",
+      "mensaje": "Hola {nombre}, gracias por sumarte a nuestra App. Mirá las pizzas y promos con descuento para vos hoy.",
+      "url": "/menu",
+      "icono": "🍀",
+      "destinatarios": "Todos los Clientes",
+      "fechaCreacion": "2026-09-06T21:30:14.125Z"
+    }
+  ]
+}

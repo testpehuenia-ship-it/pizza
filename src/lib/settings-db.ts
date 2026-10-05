@@ -52,7 +52,11 @@ async function leerArchivoLocal(): Promise<TiendaConfig> {
     const data = await fs.readFile(CONFIG_FILE, "utf-8");
     const parsed = JSON.parse(data);
     if (parsed && parsed.whatsappNumero) {
-      return parsed;
+      return {
+        ...CONFIG_DEFAULT,
+        ...parsed,
+        horarios: parsed.horarios || CONFIG_DEFAULT.horarios,
+      };
     }
   } catch {
     // Si no existe, crear el archivo con valor por defecto
@@ -87,8 +91,13 @@ export async function obtenerConfiguracionTienda(): Promise<TiendaConfig> {
       const res = await db.execute("SELECT valor FROM tienda_config WHERE clave = 'whatsapp_config' LIMIT 1");
       if (res.rows.length > 0 && res.rows[0].valor) {
         const parsed = JSON.parse(String(res.rows[0].valor)) as TiendaConfig;
-        memoriaConfig = parsed;
-        return parsed;
+        const fusionada: TiendaConfig = {
+          ...CONFIG_DEFAULT,
+          ...parsed,
+          horarios: parsed.horarios || CONFIG_DEFAULT.horarios,
+        };
+        memoriaConfig = fusionada;
+        return fusionada;
       }
     } catch (err) {
       console.warn("Turso no disponible para tienda_config, usando archivo local:", err);

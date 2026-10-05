@@ -6,8 +6,12 @@ import { useTiendaStore } from "@/lib/store";
 import { generarMensajeWhatsApp } from "@/lib/whatsapp";
 import { salirYCerrarApp } from "@/lib/cerrar-app";
 import Link from "next/link";
+import { useHorarioTienda } from "@/hooks/useHorarioTienda";
+import { EstadoHorarioBadge } from "@/components/horarios/EstadoHorarioBadge";
+import { AlertaLocalCerrado } from "@/components/horarios/AlertaLocalCerrado";
 
 export default function PedidoPage() {
+  const { estado, horariosConfig, estaAbierto } = useHorarioTienda();
   const {
     cliente,
     pizzas,
@@ -113,6 +117,13 @@ export default function PedidoPage() {
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
 
   const handleEnviarPedidoWhatsApp = () => {
+    if (!estaAbierto) {
+      alert(
+        `El local se encuentra cerrado en este momento (${estado.subtitulo}). Los pedidos se reciben en el horario de atención.`
+      );
+      return;
+    }
+
     if (tipoEntrega === "delivery") {
       if (modoDireccion === "gps" && !gpsData) {
         alert("Por favor pulsa en 'Detectar mi ubicación del celular' o escribe tu dirección.");
@@ -158,7 +169,10 @@ export default function PedidoPage() {
   if (pizzas.length === 0 && bebidas.length === 0 && (!combos || combos.length === 0) && !pedidoEnviado) {
     return (
       <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
-        <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-8 text-center shadow-sm fade-in-up">
+        <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-8 text-center shadow-sm fade-in-up space-y-4">
+          <div className="flex justify-center">
+            <EstadoHorarioBadge theme="light" />
+          </div>
           <span className="text-4xl block mb-2">🛒</span>
           <h3 className="text-base font-bold text-[#14532d] mb-1">Tu carrito está vacío</h3>
           <p className="text-xs text-[#4b6b55] mb-4">Sumá tus pizzas favoritas en el menú para confirmar tu pedido.</p>
@@ -186,20 +200,23 @@ export default function PedidoPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#14532d] p-4 flex items-center justify-center select-none">
       <div className="max-w-md w-full bg-white border border-emerald-100 rounded-3xl p-6 sm:p-8 shadow-[0_15px_40px_rgba(20,83,45,0.08)] fade-in-up">
-        {/* Barra Superior con botón Salir destacado */}
-        <div className="flex items-center justify-between pb-3 border-b border-emerald-100/80 mb-4">
+        {/* Barra Superior con botón Salir y Badge de Horario */}
+        <div className="flex items-center justify-between pb-3 border-b border-emerald-100/80 mb-4 gap-2">
           <Link
             href="/menu"
             className="text-xs font-bold text-[#4b6b55] hover:text-[#14532d] flex items-center gap-1 transition-colors"
           >
             <span>←</span>
-            <span>Volver a la Carta</span>
+            <span>Volver</span>
           </Link>
+
+          <EstadoHorarioBadge theme="light" />
+
           <button
             type="button"
             onClick={() => salirYCerrarApp()}
             title="Salir y cerrar la aplicación"
-            className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-3.5 py-1.5 rounded-full shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
+            className="bg-gradient-to-r from-red-600 to-rose-600 text-white font-black text-[11px] px-3 py-1.5 rounded-full shadow-md shadow-red-700/25 hover:brightness-110 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
           >
             <span>🚪</span>
             <span>Salir</span>
@@ -208,6 +225,16 @@ export default function PedidoPage() {
 
         {!pedidoEnviado ? (
           <div>
+            {/* Alerta si el local está cerrado */}
+            {!estaAbierto && (
+              <AlertaLocalCerrado
+                estado={estado}
+                config={horariosConfig}
+                theme="light"
+                className="mb-4"
+              />
+            )}
+
             <div className="text-center mb-5">
               <span className="text-4xl inline-block mb-1">🛵</span>
               <h2 className="text-2xl font-black text-[#14532d]">Confirmar Pedido</h2>
@@ -467,10 +494,19 @@ export default function PedidoPage() {
               <button
                 type="button"
                 onClick={handleEnviarPedidoWhatsApp}
-                className="w-full py-4 rounded-2xl font-black text-sm text-white bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                disabled={!estaAbierto}
+                className={`w-full py-4 rounded-2xl font-black text-sm text-white transition-all flex items-center justify-center gap-2 ${
+                  estaAbierto
+                    ? "bg-gradient-to-r from-[#15803d] to-[#16a34a] shadow-lg shadow-emerald-700/25 hover:brightness-105 active:scale-[0.98] cursor-pointer"
+                    : "bg-slate-400 opacity-60 cursor-not-allowed shadow-none"
+                }`}
               >
-                <span>Enviar Pedido por WhatsApp</span>
-                <span className="text-base">💬</span>
+                <span>
+                  {estaAbierto
+                    ? "Enviar Pedido por WhatsApp"
+                    : "🚫 Local Cerrado • Pedidos no disponibles"}
+                </span>
+                <span className="text-base">{estaAbierto ? "💬" : "⏰"}</span>
               </button>
 
               <div className="flex items-center justify-between pt-2">

@@ -4,5 +4,18 @@
   "whatsappDisplay": "02942-661000",
   "nombreLocal": "0600Boston",
   "direccionLocal": "Zapala, Neuquén",
-  "updated_at": "2026-01-01T00:00:00.000Z"
+  "horarios": {
+    "modo": "automatico",
+    "mensajePersonalizado": "",
+    "dias": [
+      { "dia": 1, "nombre": "Lunes", "abierto": false, "apertura": "20:00", "cierre": "23:00" },
+      { "dia": 2, "nombre": "Martes", "abierto": true, "apertura": "20:00", "cierre": "23:00" },
+      { "dia": 3, "nombre": "Miércoles", "abierto": true, "apertura": "20:00", "cierre": "23:00" },
+      { "dia": 4, "nombre": "Jueves", "abierto": true, "apertura": "20:00", "cierre": "23:00" },
+      { "dia": 5, "nombre": "Viernes", "abierto": true, "apertura": "20:00", "cierre": "23:00" },
+      { "dia": 6, "nombre": "Sábado", "abierto": true, "apertura": "20:00", "cierre": "23:00" },
+      { "dia": 0, "nombre": "Domingo", "abierto": true, "apertura": "20:00", "cierre": "23:00" }
+    ]
+  },
+  "updated_at": "2026-10-04T00:00:00.000Z"
 }

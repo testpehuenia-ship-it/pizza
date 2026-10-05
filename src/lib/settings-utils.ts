@@ -1,9 +1,12 @@
+import { HorariosConfig, HORARIOS_DEFAULT } from "./horarios";
+
 export interface TiendaConfig {
   whatsappNumero: string; // ej: "2942661000"
   whatsappNumeroWaMe: string; // ej: "5492942661000"
   whatsappDisplay: string; // ej: "02942-661000"
   nombreLocal?: string;
   direccionLocal?: string;
+  horarios?: HorariosConfig;
   updated_at?: string;
 }
 
@@ -13,6 +16,7 @@ export const CONFIG_DEFAULT: TiendaConfig = {
   whatsappDisplay: "02942-661000",
   nombreLocal: "0600Boston",
   direccionLocal: "Zapala, Neuquén",
+  horarios: HORARIOS_DEFAULT,
   updated_at: new Date().toISOString(),
 };
 

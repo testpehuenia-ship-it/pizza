@@ -4,8 +4,12 @@ import React, { useState } from "react";
 import { useTiendaStore } from "@/lib/store";
 import { AnimacionCaja } from "./AnimacionCaja";
 import Link from "next/link";
+import { useHorarioTienda } from "@/hooks/useHorarioTienda";
+import { EstadoHorarioBadge } from "@/components/horarios/EstadoHorarioBadge";
+import { AlertaLocalCerrado } from "@/components/horarios/AlertaLocalCerrado";
 
 export function ResumenCarrito() {
+  const { estado, horariosConfig, estaAbierto } = useHorarioTienda();
   const { pizzas, bebidas, combos = [], quitarPizza, quitarBebida, quitarCombo, calcularTotal } = useTiendaStore();
   const [mostrarModal, setMostrarModal] = useState(false);
   const total = calcularTotal();
@@ -17,7 +21,10 @@ export function ResumenCarrito() {
 
   if (totalItems === 0) {
     return (
-      <div className="w-full max-w-md mx-auto my-8 bg-white border border-emerald-100 rounded-3xl p-8 text-center text-[#4b6b55] shadow-sm">
+      <div className="w-full max-w-md mx-auto my-8 bg-white border border-emerald-100 rounded-3xl p-8 text-center text-[#4b6b55] shadow-sm space-y-4">
+        <div className="flex justify-center mb-1">
+          <EstadoHorarioBadge theme="light" />
+        </div>
         <span className="text-4xl block mb-2">🛒</span>
         <h3 className="text-base font-bold text-[#14532d] mb-1">Tu carrito está vacío</h3>
         <p className="text-xs text-[#4b6b55] mb-4">¡Elegí tu pizza favorita en el menú para comenzar!</p>
@@ -33,14 +40,27 @@ export function ResumenCarrito() {
 
   return (
     <>
-      <div className="w-full max-w-md mx-auto my-4 bg-white border border-emerald-100 rounded-3xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-emerald-100 mb-4">
-          <h3 className="text-base font-extrabold text-[#14532d] flex items-center gap-2">
-            <span>🛒 Tu Pedido</span>
-            <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">
-              {totalItems}
-            </span>
-          </h3>
+      <div className="w-full max-w-md mx-auto my-4 bg-white border border-emerald-100 rounded-3xl p-5 shadow-sm space-y-3">
+        {/* Alerta si el local está cerrado */}
+        {!estaAbierto && (
+          <AlertaLocalCerrado
+            estado={estado}
+            config={horariosConfig}
+            theme="light"
+            className="mb-3"
+          />
+        )}
+
+        <div className="flex items-center justify-between pb-3 border-b border-emerald-100">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-extrabold text-[#14532d] flex items-center gap-2">
+              <span>🛒 Tu Pedido</span>
+              <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-mono font-bold">
+                {totalItems}
+              </span>
+            </h3>
+            <EstadoHorarioBadge theme="light" />
+          </div>
           <Link
             href="/bebidas"
             className="text-xs font-bold text-[#15803d] hover:underline"

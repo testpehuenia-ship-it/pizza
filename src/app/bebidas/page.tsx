@@ -7,6 +7,7 @@ import { useTiendaStore } from "@/lib/store";
 import { generarMensajeWhatsApp } from "@/lib/whatsapp";
 import Link from "next/link";
 import FooterLegal from "@/components/layout/FooterLegal";
+import { EstadoHorarioBadge } from "@/components/horarios/EstadoHorarioBadge";
 
 export default function BebidasPage() {
   const router = useRouter();
@@ -67,18 +68,20 @@ export default function BebidasPage() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#14532d] pb-32 select-none">
       {/* Header Mobile */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-emerald-100 px-4 py-3 shadow-sm">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-emerald-100 px-3 sm:px-4 py-2.5 sm:py-3 shadow-sm">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-2">
           <button
             onClick={handleEncargarOtraPizza}
             className="text-xs font-bold text-[#15803d] flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
           >
             <span>←</span>
-            <span>Volver a Pizzas</span>
+            <span>Pizzas</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#4b6b55]">
+          <EstadoHorarioBadge theme="light" />
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xs font-semibold text-[#4b6b55] hidden xs:inline">
               {totalBebidasSeleccionadas} {totalBebidasSeleccionadas === 1 ? "bebida" : "bebidas"}
             </span>
             <span className="text-xs font-mono font-black text-white bg-[#15803d] px-2.5 py-1 rounded-full">

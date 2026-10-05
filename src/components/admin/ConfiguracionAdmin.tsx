@@ -1,7 +1,12 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { TiendaConfig, normalizarNumeroWhatsApp } from "@/lib/settings-utils";
+import {
+  HorariosConfig,
+  HORARIOS_DEFAULT,
+  calcularEstadoHorario,
+  ModoHorario,
+  generarResumenSemanal,
+} from "@/lib/horarios";
 
 interface UsuarioAdminItem {
   id: string;
@@ -27,6 +32,10 @@ export function ConfiguracionAdmin({
   const [inputCelular, setInputCelular] = useState("");
   const [guardandoCelular, setGuardandoCelular] = useState(false);
   const [cargandoConfig, setCargandoConfig] = useState(true);
+
+  // 1.B Estado de Configuración de Horarios
+  const [horarios, setHorarios] = useState<HorariosConfig>(HORARIOS_DEFAULT);
+  const [guardandoHorarios, setGuardandoHorarios] = useState(false);
 
   // 2. Estado de Mi Cuenta (Usuario y Contraseña)
   const [miNombre, setMiNombre] = useState("");
@@ -54,7 +63,7 @@ export function ConfiguracionAdmin({
   const [editPassword, setEditPassword] = useState("");
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
-  // Cargar configuración de WhatsApp
+  // Cargar configuración de WhatsApp y Horarios
   const cargarConfig = async () => {
     setCargandoConfig(true);
     try {
@@ -63,6 +72,11 @@ export function ConfiguracionAdmin({
       if (data.success && data.settings) {
         setConfig(data.settings);
         setInputCelular(data.settings.whatsappNumero || "2942661000");
+        if (data.settings.horarios) {
+          setHorarios(data.settings.horarios);
+        } else {
+          setHorarios(HORARIOS_DEFAULT);
+        }
       }
     } catch (err) {
       console.error("Error al cargar config:", err);
@@ -135,6 +149,65 @@ export function ConfiguracionAdmin({
       setGuardandoCelular(false);
     }
   };
+
+  // Guardar Configuración de Horarios
+  const handleGuardarHorarios = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setGuardandoHorarios(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ horarios }),
+      });
+      const data = await res.json();
+      if (data.success && data.settings) {
+        setConfig(data.settings);
+        if (data.settings.horarios) setHorarios(data.settings.horarios);
+        onMostrarNotificacion("¡Horarios de atención guardados con éxito!", "exito");
+      } else {
+        onMostrarNotificacion(data.error || "No se pudieron guardar los horarios", "error");
+      }
+    } catch (err) {
+      onMostrarNotificacion("Error al guardar horarios en el servidor", "error");
+    } finally {
+      setGuardandoHorarios(false);
+    }
+  };
+
+  const handleToggleDia = (diaNum: number) => {
+    setHorarios((prev) => ({
+      ...prev,
+      dias: prev.dias.map((d) => (d.dia === diaNum ? { ...d, abierto: !d.abierto } : d)),
+    }));
+  };
+
+  const handleChangeHora = (diaNum: number, campo: "apertura" | "cierre", valor: string) => {
+    setHorarios((prev) => ({
+      ...prev,
+      dias: prev.dias.map((d) => (d.dia === diaNum ? { ...d, [campo]: valor } : d)),
+    }));
+  };
+
+  const handleCambiarModo = (modo: ModoHorario) => {
+    setHorarios((prev) => ({
+      ...prev,
+      modo,
+    }));
+  };
+
+  const handleRestablecerHorariosDefault = () => {
+    if (
+      confirm(
+        "¿Restablecer horarios por defecto (Martes a Domingo de 20:00 a 23:00 hs, Lunes cerrado)?"
+      )
+    ) {
+      setHorarios(HORARIOS_DEFAULT);
+      onMostrarNotificacion("Horarios restablecidos al valor por defecto. Recordá presionar Guardar.", "exito");
+    }
+  };
+
+  const estadoPreview = calcularEstadoHorario(horarios);
 
   // Guardar Cambios de Mi Cuenta (Cambio de Usuario y/o Contraseña)
   const handleGuardarMiCuenta = async (e: React.FormEvent) => {
@@ -431,6 +504,269 @@ export function ConfiguracionAdmin({
             </a>
           </div>
         </form>
+      </div>
+
+      {/* SECCIÓN HORARIOS DE ATENCIÓN Y APERTURA */}
+      <div className="bg-[#151f2e] border border-emerald-500/20 rounded-3xl p-6 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-2xl">
+              ⏰
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-white flex items-center gap-2">
+                <span>Horarios de Atención & Estado del Local</span>
+              </h3>
+              <p className="text-xs text-slate-400">
+                Controlá cuándo está abierto el local y los horarios en que los clientes pueden realizar pedidos.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleRestablecerHorariosDefault}
+              className="text-xs bg-white/5 hover:bg-white/10 text-slate-300 px-3 py-2 rounded-xl transition-all font-bold border border-white/10"
+              title="Restablecer a Martes a Domingo 20:00 a 23:00"
+            >
+              🔄 Restablecer Estándar
+            </button>
+            <button
+              type="button"
+              onClick={() => handleGuardarHorarios()}
+              disabled={guardandoHorarios}
+              className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black px-5 py-2 rounded-xl transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>💾</span>
+              <span>{guardandoHorarios ? "Guardando..." : "Guardar Horarios"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* TARJETA DE ESTADO EN TIEMPO REAL (PREVIEW) */}
+        <div className="bg-[#0d141e] border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 ${
+                estadoPreview.estaAbierto
+                  ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-400"
+                  : "bg-rose-500/20 border border-rose-500/40 text-rose-400"
+              }`}
+            >
+              {estadoPreview.estaAbierto ? "🟢" : "🔴"}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                  Estado actual para los clientes:
+                </span>
+                <span
+                  className={`text-xs font-black px-2.5 py-0.5 rounded-full border ${
+                    estadoPreview.estaAbierto
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                  }`}
+                >
+                  {estadoPreview.tituloEstado}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-white mt-0.5">
+                {estadoPreview.subtitulo}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-xs text-slate-400 bg-white/5 px-3 py-2 rounded-xl border border-white/5">
+            <span>📅 {generarResumenSemanal(horarios)}</span>
+          </div>
+        </div>
+
+        {/* SELECTOR DE MODO OPERATIVO */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+            Modo de Funcionamiento:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => handleCambiarModo("automatico")}
+              className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer ${
+                horarios.modo === "automatico"
+                  ? "bg-emerald-950/60 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500"
+                  : "bg-[#0d141e] border-white/10 text-slate-400 hover:border-white/20"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black flex items-center gap-1.5 text-white">
+                  <span>🤖</span>
+                  <span>Automático</span>
+                </span>
+                {horarios.modo === "automatico" && (
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                    Activo
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] opacity-80">
+                Abre y cierra solo según los días y horas de la tabla.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleCambiarModo("forzar_abierto")}
+              className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer ${
+                horarios.modo === "forzar_abierto"
+                  ? "bg-emerald-950/60 border-emerald-500 text-emerald-300 ring-1 ring-emerald-500"
+                  : "bg-[#0d141e] border-white/10 text-slate-400 hover:border-white/20"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black flex items-center gap-1.5 text-emerald-400">
+                  <span>⚡</span>
+                  <span>Forzar Abierto</span>
+                </span>
+                {horarios.modo === "forzar_abierto" && (
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                    Activo
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] opacity-80">
+                Muestra la app siempre abierta y permite pedidos ahora mismo.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleCambiarModo("forzar_cerrado")}
+              className={`p-3.5 rounded-2xl border text-left transition-all flex flex-col justify-between gap-1.5 cursor-pointer ${
+                horarios.modo === "forzar_cerrado"
+                  ? "bg-rose-950/60 border-rose-500 text-rose-300 ring-1 ring-rose-500"
+                  : "bg-[#0d141e] border-white/10 text-slate-400 hover:border-white/20"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black flex items-center gap-1.5 text-rose-400">
+                  <span>⛔</span>
+                  <span>Forzar Cerrado</span>
+                </span>
+                {horarios.modo === "forzar_cerrado" && (
+                  <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">
+                    Activo
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] opacity-80">
+                Pausa la recepción de pedidos inmediatamente por contingencia.
+              </p>
+            </button>
+          </div>
+        </div>
+
+        {/* TABLA DE DÍAS Y HORARIOS (LUNES A DOMINGO) */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+            Configuración Día por Día:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+            {[...horarios.dias]
+              .sort((a, b) => (a.dia === 0 ? 7 : a.dia) - (b.dia === 0 ? 7 : b.dia))
+              .map((diaItem) => (
+                <div
+                  key={diaItem.dia}
+                  className={`p-3.5 rounded-2xl border transition-all ${
+                    diaItem.abierto
+                      ? "bg-[#0d141e] border-emerald-500/30 shadow-inner"
+                      : "bg-[#0d141e]/50 border-white/5 opacity-70"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                      <span>{diaItem.abierto ? "🍕" : "💤"}</span>
+                      <span>{diaItem.nombre}</span>
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleDia(diaItem.dia)}
+                      className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                        diaItem.abierto
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                          : "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                      }`}
+                    >
+                      {diaItem.abierto ? "Abierto" : "Cerrado"}
+                    </button>
+                  </div>
+
+                  {diaItem.abierto ? (
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold mb-1">
+                          Apertura
+                        </label>
+                        <input
+                          type="time"
+                          value={diaItem.apertura}
+                          onChange={(e) =>
+                            handleChangeHora(diaItem.dia, "apertura", e.target.value)
+                          }
+                          className="w-full bg-[#151f2e] border border-white/10 rounded-xl px-2.5 py-1.5 text-white font-mono font-bold text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold mb-1">
+                          Cierre
+                        </label>
+                        <input
+                          type="time"
+                          value={diaItem.cierre}
+                          onChange={(e) =>
+                            handleChangeHora(diaItem.dia, "cierre", e.target.value)
+                          }
+                          className="w-full bg-[#151f2e] border border-white/10 rounded-xl px-2.5 py-1.5 text-white font-mono font-bold text-xs focus:outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-2 text-center text-xs text-slate-500 italic bg-white/[0.02] rounded-xl">
+                      Cerrado todo el día
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* MENSAJE PERSONALIZADO OPCIONAL */}
+        <div>
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+            Mensaje o Aviso Especial para Clientes (Opcional):
+          </label>
+          <input
+            type="text"
+            value={horarios.mensajePersonalizado || ""}
+            onChange={(e) =>
+              setHorarios((prev) => ({ ...prev, mensajePersonalizado: e.target.value }))
+            }
+            placeholder="Ej: Hoy abrimos a las 20:30 hs por mantenimiento técnico..."
+            className="w-full bg-[#0d141e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-emerald-500 transition-all"
+          />
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={() => handleGuardarHorarios()}
+            disabled={guardandoHorarios}
+            className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-slate-950 font-black px-6 py-3 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95 disabled:opacity-50 text-xs flex items-center gap-2 cursor-pointer"
+          >
+            <span>💾</span>
+            <span>{guardandoHorarios ? "Guardando Horarios..." : "Guardar Todos los Horarios"}</span>
+          </button>
+        </div>
       </div>
 
       {/* SECCIÓN 2 Y 3 EN GRID DE 2 COLUMNAS */}

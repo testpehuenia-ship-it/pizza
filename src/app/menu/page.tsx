@@ -198,6 +198,16 @@ export default function MenuPage() {
           />
         )}
 
+        {/* Encabezado Semántico H1 para SEO y GEO */}
+        <div className="text-center mb-3.5 px-1">
+          <h1 className="text-xl sm:text-2xl font-black text-[#14532d] tracking-tight">
+            Menú de Pizzas Artesanales 0600Boston
+          </h1>
+          <p className="text-[11px] sm:text-xs text-[#4b6b55] mt-0.5">
+            Elegí tu variedad artesanal, personalizá ingredientes y pedí al instante
+          </p>
+        </div>
+
         {/* Selector de Sección: Pizzas vs Combos */}
         <div className="flex bg-emerald-100/70 p-1 rounded-2xl mb-4">
           <button

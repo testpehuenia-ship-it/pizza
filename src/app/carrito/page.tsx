@@ -1,8 +1,15 @@
 import { ResumenCarrito } from "@/components/carrito/ResumenCarrito";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Tu Carrito | 0600Boston",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Tu Carrito de Pedido | 0600Boston",
+  description:
+    "Revisá las pizzas, combos y bebidas agregadas a tu carrito antes de confirmar el pedido.",
+  alternates: {
+    canonical: "/carrito",
+  },
 };
 
 export default function CarritoPage() {
